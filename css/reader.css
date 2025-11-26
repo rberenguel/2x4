@@ -4,7 +4,13 @@
 #virtual-device,
 .preview-viewport {
   /* Typography defaults */
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
   font-size: 16px;
   line-height: 1.5;
   color: #000;
@@ -28,12 +34,24 @@
   margin-bottom: 0.5em;
 }
 
-#virtual-device h1 { font-size: 1.75em; }
-#virtual-device h2 { font-size: 1.5em; }
-#virtual-device h3 { font-size: 1.25em; }
-#virtual-device h4 { font-size: 1.1em; }
-#virtual-device h5 { font-size: 1em; }
-#virtual-device h6 { font-size: 0.9em; }
+#virtual-device h1 {
+  font-size: 1.75em;
+}
+#virtual-device h2 {
+  font-size: 1.5em;
+}
+#virtual-device h3 {
+  font-size: 1.25em;
+}
+#virtual-device h4 {
+  font-size: 1.1em;
+}
+#virtual-device h5 {
+  font-size: 1em;
+}
+#virtual-device h6 {
+  font-size: 0.9em;
+}
 
 #virtual-device p {
   margin-bottom: 1em;

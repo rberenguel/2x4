@@ -4,21 +4,23 @@
  */
 
 export class Paginator {
-  constructor(containerSelector = '#virtual-device') {
+  constructor(containerSelector = "#virtual-device") {
     this.container = document.querySelector(containerSelector);
-    this.previewContainer = document.querySelector('#preview-viewport');
-    this.htmlPreviewContainer = document.querySelector('#html-preview-viewport');
+    this.previewContainer = document.querySelector("#preview-viewport");
+    this.htmlPreviewContainer = document.querySelector(
+      "#html-preview-viewport",
+    );
 
     if (!this.container) {
-      throw new Error('Virtual device container not found');
+      throw new Error("Virtual device container not found");
     }
 
     // Settings
     this.width = 480;
     this.height = 800;
     this.padding = 20; // Padding to prevent text clipping
-    this.contentWidth = this.width - (this.padding * 2);
-    this.contentHeight = this.height - (this.padding * 2);
+    this.contentWidth = this.width - this.padding * 2;
+    this.contentHeight = this.height - this.padding * 2;
     this.currentChapterIndex = 0;
     this.currentPageIndex = 0;
     this.chapters = [];
@@ -26,10 +28,10 @@ export class Paginator {
 
     // User settings
     this.settings = {
-      fontFamily: 'Inter',
+      fontFamily: "Inter",
       fontSize: 16,
       lineHeight: 1.5,
-      customCSS: ''
+      customCSS: "",
     };
 
     this.setupContainer();
@@ -44,8 +46,8 @@ export class Paginator {
     this.container.style.padding = `${this.padding}px`;
     this.container.style.columnWidth = `${this.contentWidth}px`;
     this.container.style.columnGap = `${this.padding * 2}px`; // Gap between columns
-    this.container.style.columnFill = 'auto';
-    this.container.style.boxSizing = 'border-box';
+    this.container.style.columnFill = "auto";
+    this.container.style.boxSizing = "border-box";
   }
 
   /**
@@ -66,10 +68,10 @@ export class Paginator {
     this.container.style.lineHeight = this.settings.lineHeight;
 
     // Apply custom CSS
-    let styleElement = document.getElementById('custom-reader-styles');
+    let styleElement = document.getElementById("custom-reader-styles");
     if (!styleElement) {
-      styleElement = document.createElement('style');
-      styleElement.id = 'custom-reader-styles';
+      styleElement = document.createElement("style");
+      styleElement.id = "custom-reader-styles";
       document.head.appendChild(styleElement);
     }
     styleElement.textContent = `
@@ -109,7 +111,7 @@ export class Paginator {
     // Calculate page count
     // Each page is contentWidth wide + gap between columns
     const containerWidth = this.container.scrollWidth;
-    const pageWidth = this.contentWidth + (this.padding * 2);
+    const pageWidth = this.contentWidth + this.padding * 2;
     this.pageCount = Math.ceil(containerWidth / pageWidth);
 
     // Store chapter info
@@ -131,10 +133,10 @@ export class Paginator {
    */
   async waitForContentLoad() {
     // Wait for images
-    const images = this.container.querySelectorAll('img');
-    const imagePromises = Array.from(images).map(img => {
+    const images = this.container.querySelectorAll("img");
+    const imagePromises = Array.from(images).map((img) => {
       if (img.complete) return Promise.resolve();
-      return new Promise(resolve => {
+      return new Promise((resolve) => {
         img.onload = resolve;
         img.onerror = resolve; // Continue even if image fails
       });
@@ -148,7 +150,7 @@ export class Paginator {
     }
 
     // Small additional delay for layout stabilization
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
   }
 
   /**
@@ -204,22 +206,55 @@ export class Paginator {
     }
 
     // Clear preview
-    this.htmlPreviewContainer.innerHTML = '';
+    this.htmlPreviewContainer.innerHTML = "";
 
-    // Create a temporary container to capture the current page
-    const tempContainer = document.createElement('div');
+    // STEP 1: Temporarily move container on-screen to force column rendering
+    // CSS columns don't fully render when positioned far off-screen
+    const originalLeft = this.container.style.left;
+    const originalTop = this.container.style.top;
+    const originalZIndex = this.container.style.zIndex;
+    const originalOpacity = this.container.style.opacity;
+    const originalPointerEvents = this.container.style.pointerEvents;
+
+    this.container.style.left = "0px";
+    this.container.style.top = "0px";
+    this.container.style.zIndex = "-9999";
+    this.container.style.opacity = "0";
+    this.container.style.pointerEvents = "none";
+
+    // STEP 2: Force reflow to ensure columns are calculated
+    this.container.offsetHeight; // Reading this property forces layout calculation
+
+    // STEP 3: Clone with proper column layout
+    const clone = this.container.cloneNode(true);
+
+    // Get the full width of all columns before moving back
+    const fullWidth = this.container.scrollWidth;
+
+    // STEP 4: Move original back off-screen
+    this.container.style.left = originalLeft;
+    this.container.style.top = originalTop;
+    this.container.style.zIndex = originalZIndex;
+    this.container.style.opacity = originalOpacity;
+    this.container.style.pointerEvents = originalPointerEvents;
+
+    // STEP 5: Setup clone for preview
+    const tempContainer = document.createElement("div");
     tempContainer.style.width = `${this.width}px`;
     tempContainer.style.height = `${this.height}px`;
-    tempContainer.style.overflow = 'hidden';
-    tempContainer.style.position = 'relative';
-    tempContainer.style.backgroundColor = '#fff';
+    tempContainer.style.overflow = "hidden";
+    tempContainer.style.position = "relative";
+    tempContainer.style.backgroundColor = "#fff";
 
-    // Clone the virtual device content
-    const clone = this.container.cloneNode(true);
-    clone.style.position = 'absolute';
-    clone.style.left = '0';
-    clone.style.top = '0';
-    const pageWidth = this.contentWidth + (this.padding * 2);
+    clone.style.position = "absolute";
+    clone.style.left = "0";
+    clone.style.top = "0";
+    clone.style.opacity = "1";
+    clone.style.zIndex = "1";
+    clone.style.pointerEvents = "auto"; // Enable text selection
+    clone.style.userSelect = "text"; // Enable text selection
+    clone.style.width = `${fullWidth}px`; // Set to full width to show all columns
+    const pageWidth = this.contentWidth + this.padding * 2;
     clone.style.transform = `translateX(${-(this.currentPageIndex * pageWidth)}px)`;
 
     tempContainer.appendChild(clone);
@@ -236,7 +271,7 @@ export class Paginator {
       totalPages: this.pageCount,
       currentChapter: this.currentChapterIndex + 1,
       hasNextPage: this.currentPageIndex < this.pageCount - 1,
-      hasPrevPage: this.currentPageIndex > 0
+      hasPrevPage: this.currentPageIndex > 0,
     };
   }
 
@@ -246,18 +281,18 @@ export class Paginator {
    */
   getCurrentPageElement() {
     // Create a container that shows only the current page
-    const pageContainer = document.createElement('div');
+    const pageContainer = document.createElement("div");
     pageContainer.style.width = `${this.width}px`;
     pageContainer.style.height = `${this.height}px`;
-    pageContainer.style.overflow = 'hidden';
-    pageContainer.style.position = 'relative';
+    pageContainer.style.overflow = "hidden";
+    pageContainer.style.position = "relative";
 
     // Clone content
     const clone = this.container.cloneNode(true);
-    clone.style.position = 'absolute';
-    clone.style.left = '0';
-    clone.style.top = '0';
-    const pageWidth = this.contentWidth + (this.padding * 2);
+    clone.style.position = "absolute";
+    clone.style.left = "0";
+    clone.style.top = "0";
+    const pageWidth = this.contentWidth + this.padding * 2;
     clone.style.transform = `translateX(${-(this.currentPageIndex * pageWidth)}px)`;
 
     pageContainer.appendChild(clone);
@@ -269,8 +304,9 @@ export class Paginator {
    * Clear current content
    */
   clear() {
-    this.container.innerHTML = '';
-    this.previewContainer.innerHTML = '<div class="preview-placeholder"><p>Upload an EPUB file to preview</p></div>';
+    this.container.innerHTML = "";
+    this.previewContainer.innerHTML =
+      '<div class="preview-placeholder"><p>Upload an EPUB file to preview</p></div>';
     this.currentChapterIndex = 0;
     this.currentPageIndex = 0;
     this.pageCount = 0;
@@ -281,7 +317,10 @@ export class Paginator {
    * @returns {number}
    */
   getTotalPages() {
-    return this.chapters.reduce((sum, chapter) => sum + (chapter?.pageCount || 0), 0);
+    return this.chapters.reduce(
+      (sum, chapter) => sum + (chapter?.pageCount || 0),
+      0,
+    );
   }
 
   /**

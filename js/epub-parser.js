@@ -8,7 +8,7 @@ export class EPUBParser {
     this.zip = null;
     this.opfDoc = null;
     this.opfPath = null;
-    this.basePath = '';
+    this.basePath = "";
     this.metadata = {};
     this.spine = [];
     this.manifest = {};
@@ -24,18 +24,23 @@ export class EPUBParser {
       this.zip = await JSZip.loadAsync(file);
 
       // Find and parse container.xml to locate the OPF file
-      const containerXml = await this.zip.file('META-INF/container.xml').async('text');
+      const containerXml = await this.zip
+        .file("META-INF/container.xml")
+        .async("text");
       const parser = new DOMParser();
-      const containerDoc = parser.parseFromString(containerXml, 'text/xml');
+      const containerDoc = parser.parseFromString(containerXml, "text/xml");
 
       // Get OPF file path
-      const rootfile = containerDoc.querySelector('rootfile');
-      this.opfPath = rootfile.getAttribute('full-path');
-      this.basePath = this.opfPath.substring(0, this.opfPath.lastIndexOf('/') + 1);
+      const rootfile = containerDoc.querySelector("rootfile");
+      this.opfPath = rootfile.getAttribute("full-path");
+      this.basePath = this.opfPath.substring(
+        0,
+        this.opfPath.lastIndexOf("/") + 1,
+      );
 
       // Parse OPF file
-      const opfContent = await this.zip.file(this.opfPath).async('text');
-      this.opfDoc = parser.parseFromString(opfContent, 'text/xml');
+      const opfContent = await this.zip.file(this.opfPath).async("text");
+      this.opfDoc = parser.parseFromString(opfContent, "text/xml");
 
       // Extract metadata
       this.parseMetadata();
@@ -49,11 +54,13 @@ export class EPUBParser {
       return {
         metadata: this.metadata,
         spine: this.spine,
-        chapterCount: this.spine.length
+        chapterCount: this.spine.length,
       };
     } catch (error) {
-      console.error('Error loading EPUB:', error);
-      throw new Error('Failed to parse EPUB file. Please ensure it is a valid EPUB.');
+      console.error("Error loading EPUB:", error);
+      throw new Error(
+        "Failed to parse EPUB file. Please ensure it is a valid EPUB.",
+      );
     }
   }
 
@@ -61,15 +68,22 @@ export class EPUBParser {
    * Parse metadata from OPF
    */
   parseMetadata() {
-    const metadata = this.opfDoc.querySelector('metadata');
+    const metadata = this.opfDoc.querySelector("metadata");
 
     this.metadata = {
-      title: this.getMetadataValue(metadata, 'dc\\:title', 'title') || 'Unknown Title',
-      creator: this.getMetadataValue(metadata, 'dc\\:creator', 'creator') || 'Unknown Author',
-      language: this.getMetadataValue(metadata, 'dc\\:language', 'language') || 'en',
-      identifier: this.getMetadataValue(metadata, 'dc\\:identifier', 'identifier') || '',
-      publisher: this.getMetadataValue(metadata, 'dc\\:publisher', 'publisher') || '',
-      date: this.getMetadataValue(metadata, 'dc\\:date', 'date') || ''
+      title:
+        this.getMetadataValue(metadata, "dc\\:title", "title") ||
+        "Unknown Title",
+      creator:
+        this.getMetadataValue(metadata, "dc\\:creator", "creator") ||
+        "Unknown Author",
+      language:
+        this.getMetadataValue(metadata, "dc\\:language", "language") || "en",
+      identifier:
+        this.getMetadataValue(metadata, "dc\\:identifier", "identifier") || "",
+      publisher:
+        this.getMetadataValue(metadata, "dc\\:publisher", "publisher") || "",
+      date: this.getMetadataValue(metadata, "dc\\:date", "date") || "",
     };
   }
 
@@ -88,17 +102,17 @@ export class EPUBParser {
    * Parse manifest (all resources in EPUB)
    */
   parseManifest() {
-    const manifestElement = this.opfDoc.querySelector('manifest');
-    const items = manifestElement.querySelectorAll('item');
+    const manifestElement = this.opfDoc.querySelector("manifest");
+    const items = manifestElement.querySelectorAll("item");
 
-    items.forEach(item => {
-      const id = item.getAttribute('id');
-      const href = item.getAttribute('href');
-      const mediaType = item.getAttribute('media-type');
+    items.forEach((item) => {
+      const id = item.getAttribute("id");
+      const href = item.getAttribute("href");
+      const mediaType = item.getAttribute("media-type");
 
       this.manifest[id] = {
         href: this.basePath + href,
-        mediaType: mediaType
+        mediaType: mediaType,
       };
     });
   }
@@ -107,19 +121,19 @@ export class EPUBParser {
    * Parse spine (reading order)
    */
   parseSpine() {
-    const spineElement = this.opfDoc.querySelector('spine');
-    const itemrefs = spineElement.querySelectorAll('itemref');
+    const spineElement = this.opfDoc.querySelector("spine");
+    const itemrefs = spineElement.querySelectorAll("itemref");
 
     this.spine = [];
     itemrefs.forEach((itemref, index) => {
-      const idref = itemref.getAttribute('idref');
+      const idref = itemref.getAttribute("idref");
       const manifestItem = this.manifest[idref];
 
       if (manifestItem) {
         this.spine.push({
           id: idref,
           href: manifestItem.href,
-          index: index
+          index: index,
         });
       }
     });
@@ -132,7 +146,7 @@ export class EPUBParser {
    */
   async getChapterContent(index) {
     if (index < 0 || index >= this.spine.length) {
-      throw new Error('Chapter index out of bounds');
+      throw new Error("Chapter index out of bounds");
     }
 
     const spineItem = this.spine[index];
@@ -142,12 +156,12 @@ export class EPUBParser {
       throw new Error(`Chapter file not found: ${spineItem.href}`);
     }
 
-    let content = await chapterFile.async('text');
+    let content = await chapterFile.async("text");
 
     // Parse HTML and extract body content
     const parser = new DOMParser();
-    const doc = parser.parseFromString(content, 'text/html');
-    const body = doc.querySelector('body');
+    const doc = parser.parseFromString(content, "text/html");
+    const body = doc.querySelector("body");
 
     if (!body) {
       return content; // Return raw content if no body tag
@@ -166,21 +180,24 @@ export class EPUBParser {
    * @returns {Promise<string>}
    */
   async processContent(body, chapterPath) {
-    const chapterDir = chapterPath.substring(0, chapterPath.lastIndexOf('/') + 1);
+    const chapterDir = chapterPath.substring(
+      0,
+      chapterPath.lastIndexOf("/") + 1,
+    );
 
     // Process images
-    const images = body.querySelectorAll('img');
+    const images = body.querySelectorAll("img");
     for (const img of images) {
-      const src = img.getAttribute('src');
+      const src = img.getAttribute("src");
       if (src) {
         try {
           const fullPath = this.resolvePath(chapterDir, src);
           const imageFile = this.zip.file(fullPath);
 
           if (imageFile) {
-            const blob = await imageFile.async('blob');
+            const blob = await imageFile.async("blob");
             const dataUrl = await this.blobToDataURL(blob);
-            img.setAttribute('src', dataUrl);
+            img.setAttribute("src", dataUrl);
           }
         } catch (error) {
           console.warn(`Failed to load image: ${src}`, error);
@@ -198,23 +215,23 @@ export class EPUBParser {
    * @returns {string}
    */
   resolvePath(base, relative) {
-    if (relative.startsWith('/')) {
+    if (relative.startsWith("/")) {
       return relative.substring(1);
     }
 
     // Handle ../ and ./
-    const parts = (base + relative).split('/');
+    const parts = (base + relative).split("/");
     const resolved = [];
 
     for (const part of parts) {
-      if (part === '..') {
+      if (part === "..") {
         resolved.pop();
-      } else if (part !== '.' && part !== '') {
+      } else if (part !== "." && part !== "") {
         resolved.push(part);
       }
     }
 
-    return resolved.join('/');
+    return resolved.join("/");
   }
 
   /**
@@ -238,7 +255,7 @@ export class EPUBParser {
    */
   getChapterTitle(index) {
     if (index < 0 || index >= this.spine.length) {
-      return '';
+      return "";
     }
 
     // For now, just return chapter number

@@ -7,24 +7,60 @@ export class FontEmbedder {
   constructor() {
     this.fontCache = new Map();
     this.fontDefinitions = {
-      'Inter': [
-        { path: 'fonts/InterDisplay-Regular.woff2', weight: 'normal', style: 'normal' },
-        { path: 'fonts/InterDisplay-Bold.woff2', weight: 'bold', style: 'normal' },
-        { path: 'fonts/InterDisplay-Italic.woff2', weight: 'normal', style: 'italic' }
+      Inter: [
+        {
+          path: "fonts/InterDisplay-Regular.woff2",
+          weight: "normal",
+          style: "normal",
+        },
+        {
+          path: "fonts/InterDisplay-Bold.woff2",
+          weight: "bold",
+          style: "normal",
+        },
+        {
+          path: "fonts/InterDisplay-Italic.woff2",
+          weight: "normal",
+          style: "italic",
+        },
       ],
-      'Reforma': [
-        { path: 'fonts/Reforma1969-Blanca.woff2', weight: 'normal', style: 'normal' },
-        { path: 'fonts/Reforma1969-Negra.woff', weight: 'bold', style: 'normal' },
-        { path: 'fonts/Reforma1969-BlancaItalica.woff2', weight: 'normal', style: 'italic' }
+      Reforma: [
+        {
+          path: "fonts/Reforma1969-Blanca.woff2",
+          weight: "normal",
+          style: "normal",
+        },
+        {
+          path: "fonts/Reforma1969-Negra.woff",
+          weight: "bold",
+          style: "normal",
+        },
+        {
+          path: "fonts/Reforma1969-BlancaItalica.woff2",
+          weight: "normal",
+          style: "italic",
+        },
       ],
-      'Roboto': [
-        { path: 'fonts/Roboto-Regular.woff', weight: 'normal', style: 'normal' }
+      Roboto: [
+        {
+          path: "fonts/Roboto-Regular.woff",
+          weight: "normal",
+          style: "normal",
+        },
       ],
-      'Monoid': [
-        { path: 'fonts/monoid-regular.woff2', weight: 'normal', style: 'normal' },
-        { path: 'fonts/monoid-bold.woff2', weight: 'bold', style: 'normal' },
-        { path: 'fonts/monoid-italic.woff2', weight: 'normal', style: 'italic' }
-      ]
+      Monoid: [
+        {
+          path: "fonts/monoid-regular.woff2",
+          weight: "normal",
+          style: "normal",
+        },
+        { path: "fonts/monoid-bold.woff2", weight: "bold", style: "normal" },
+        {
+          path: "fonts/monoid-italic.woff2",
+          weight: "normal",
+          style: "italic",
+        },
+      ],
     };
   }
 
@@ -57,7 +93,7 @@ export class FontEmbedder {
           weight: font.weight,
           style: font.style,
           base64: base64,
-          format: format
+          format: format,
         });
       } catch (error) {
         console.warn(`Failed to load font: ${font.path}`, error);
@@ -95,7 +131,7 @@ export class FontEmbedder {
       const reader = new FileReader();
       reader.onloadend = () => {
         // Extract just the base64 part (remove data:... prefix)
-        const base64 = reader.result.split(',')[1];
+        const base64 = reader.result.split(",")[1];
         resolve(base64);
       };
       reader.onerror = reject;
@@ -109,11 +145,11 @@ export class FontEmbedder {
    * @returns {string}
    */
   getFontFormat(path) {
-    if (path.endsWith('.woff2')) return 'woff2';
-    if (path.endsWith('.woff')) return 'woff';
-    if (path.endsWith('.ttf')) return 'truetype';
-    if (path.endsWith('.otf')) return 'opentype';
-    return 'woff2'; // default
+    if (path.endsWith(".woff2")) return "woff2";
+    if (path.endsWith(".woff")) return "woff";
+    if (path.endsWith(".ttf")) return "truetype";
+    if (path.endsWith(".otf")) return "opentype";
+    return "woff2"; // default
   }
 
   /**
@@ -122,8 +158,9 @@ export class FontEmbedder {
    * @returns {string} CSS string
    */
   generateFontFaceCSS(fonts) {
-    return fonts.map(font => {
-      return `
+    return fonts
+      .map((font) => {
+        return `
         @font-face {
           font-family: '${font.family}';
           font-weight: ${font.weight};
@@ -131,7 +168,8 @@ export class FontEmbedder {
           src: url('data:font/${font.format};base64,${font.base64}') format('${font.format}');
         }
       `;
-    }).join('\n');
+      })
+      .join("\n");
   }
 
   /**
@@ -151,7 +189,7 @@ export class FontEmbedder {
   async preloadAllFonts() {
     const fontFamilies = Object.keys(this.fontDefinitions);
     await Promise.all(
-      fontFamilies.map(family => this.loadFontFamily(family))
+      fontFamilies.map((family) => this.loadFontFamily(family)),
     );
   }
 

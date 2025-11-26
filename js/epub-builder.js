@@ -7,10 +7,10 @@ export class EPUBBuilder {
   constructor() {
     this.images = [];
     this.metadata = {
-      title: 'Converted EPUB',
-      creator: 'Unknown',
-      language: 'en',
-      identifier: this.generateUUID()
+      title: "Converted EPUB",
+      creator: "Unknown",
+      language: "en",
+      identifier: this.generateUUID(),
     };
   }
 
@@ -30,10 +30,10 @@ export class EPUBBuilder {
   addImage(blob, index) {
     this.images.push({
       blob: blob,
-      filename: `images/page-${String(index).padStart(4, '0')}.jpg`,
-      id: `img-${String(index).padStart(4, '0')}`,
-      xhtmlFilename: `text/page-${String(index).padStart(4, '0')}.xhtml`,
-      xhtmlId: `page-${String(index).padStart(4, '0')}`
+      filename: `images/page-${String(index).padStart(4, "0")}.jpg`,
+      id: `img-${String(index).padStart(4, "0")}`,
+      xhtmlFilename: `text/page-${String(index).padStart(4, "0")}.xhtml`,
+      xhtmlId: `page-${String(index).padStart(4, "0")}`,
     });
   }
 
@@ -45,16 +45,16 @@ export class EPUBBuilder {
     const zip = new JSZip();
 
     // Add mimetype (must be first, uncompressed)
-    zip.file('mimetype', 'application/epub+zip', { compression: 'STORE' });
+    zip.file("mimetype", "application/epub+zip", { compression: "STORE" });
 
     // Add META-INF/container.xml
-    zip.file('META-INF/container.xml', this.generateContainerXML());
+    zip.file("META-INF/container.xml", this.generateContainerXML());
 
     // Add content.opf
-    zip.file('OEBPS/content.opf', this.generateContentOPF());
+    zip.file("OEBPS/content.opf", this.generateContentOPF());
 
     // Add toc.ncx (for older readers)
-    zip.file('OEBPS/toc.ncx', this.generateTocNCX());
+    zip.file("OEBPS/toc.ncx", this.generateTocNCX());
 
     // Add images
     for (const image of this.images) {
@@ -68,8 +68,8 @@ export class EPUBBuilder {
 
     // Generate ZIP
     const blob = await zip.generateAsync({
-      type: 'blob',
-      mimeType: 'application/epub+zip'
+      type: "blob",
+      mimeType: "application/epub+zip",
     });
 
     return blob;
@@ -91,12 +91,20 @@ export class EPUBBuilder {
    * Generate content.opf
    */
   generateContentOPF() {
-    const manifestItems = this.images.map(img => `
+    const manifestItems = this.images
+      .map(
+        (img) => `
     <item id="${img.id}" href="${img.filename}" media-type="image/jpeg"/>
-    <item id="${img.xhtmlId}" href="${img.xhtmlFilename}" media-type="application/xhtml+xml"/>`).join('');
+    <item id="${img.xhtmlId}" href="${img.xhtmlFilename}" media-type="application/xhtml+xml"/>`,
+      )
+      .join("");
 
-    const spineItems = this.images.map(img => `
-    <itemref idref="${img.xhtmlId}"/>`).join('');
+    const spineItems = this.images
+      .map(
+        (img) => `
+    <itemref idref="${img.xhtmlId}"/>`,
+      )
+      .join("");
 
     return `<?xml version="1.0" encoding="UTF-8"?>
 <package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="uid">
@@ -105,7 +113,7 @@ export class EPUBBuilder {
     <dc:title>${this.escapeXML(this.metadata.title)}</dc:title>
     <dc:creator>${this.escapeXML(this.metadata.creator)}</dc:creator>
     <dc:language>${this.metadata.language}</dc:language>
-    <meta property="dcterms:modified">${new Date().toISOString().split('.')[0]}Z</meta>
+    <meta property="dcterms:modified">${new Date().toISOString().split(".")[0]}Z</meta>
   </metadata>
   <manifest>
     <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>${manifestItems}
@@ -119,13 +127,17 @@ export class EPUBBuilder {
    * Generate toc.ncx
    */
   generateTocNCX() {
-    const navPoints = this.images.map((img, index) => `
+    const navPoints = this.images
+      .map(
+        (img, index) => `
     <navPoint id="navpoint-${index + 1}" playOrder="${index + 1}">
       <navLabel>
         <text>Page ${index + 1}</text>
       </navLabel>
       <content src="${img.xhtmlFilename}"/>
-    </navPoint>`).join('');
+    </navPoint>`,
+      )
+      .join("");
 
     return `<?xml version="1.0" encoding="UTF-8"?>
 <ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
@@ -176,22 +188,25 @@ export class EPUBBuilder {
    */
   escapeXML(str) {
     return str
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&apos;');
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&apos;");
   }
 
   /**
    * Generate UUID for identifier
    */
   generateUUID() {
-    return 'urn:uuid:' + 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-      const r = Math.random() * 16 | 0;
-      const v = c === 'x' ? r : (r & 0x3 | 0x8);
-      return v.toString(16);
-    });
+    return (
+      "urn:uuid:" +
+      "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+        const r = (Math.random() * 16) | 0;
+        const v = c === "x" ? r : (r & 0x3) | 0x8;
+        return v.toString(16);
+      })
+    );
   }
 
   /**
