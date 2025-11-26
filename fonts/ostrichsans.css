@@ -1,0 +1,15 @@
+/* OstrichSans font for presentations */
+
+@font-face {
+  font-family: "OstrichSans";
+  src: url("./OstrichSans-Medium.otf") format("opentype");
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "OstrichSans";
+  src: url("./OstrichSans-Heavy.otf") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+}

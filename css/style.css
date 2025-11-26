@@ -1,0 +1,430 @@
+/* Solarized Light Color Palette */
+:root {
+  --base03: #002b36;
+  --base02: #073642;
+  --base01: #586e75;
+  --base00: #657b83;
+  --base0: #839496;
+  --base1: #93a1a1;
+  --base2: #eee8d5;
+  --base3: #fdf6e3;
+  --yellow: #b58900;
+  --orange: #cb4b16;
+  --red: #dc322f;
+  --magenta: #d33682;
+  --violet: #6c71c4;
+  --blue: #268bd2;
+  --cyan: #2aa198;
+  --green: #859900;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--base3);
+  color: var(--base00);
+  line-height: 1.5;
+}
+
+.container {
+  display: grid;
+  grid-template-columns: 400px 1fr;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Settings Panel */
+.settings-panel {
+  background-color: var(--base2);
+  border-right: 2px solid var(--base1);
+  overflow-y: auto;
+  padding: 2rem;
+}
+
+.settings-panel header {
+  margin-bottom: 2rem;
+}
+
+.settings-panel h1 {
+  font-size: 1.75rem;
+  color: var(--base02);
+  margin-bottom: 0.25rem;
+}
+
+.subtitle {
+  font-size: 0.875rem;
+  color: var(--base01);
+}
+
+.settings-section {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--base1);
+}
+
+.settings-section:last-child {
+  border-bottom: none;
+}
+
+.settings-section h2 {
+  font-size: 1rem;
+  color: var(--base01);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 1rem;
+}
+
+/* File Upload */
+.file-upload-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background-color: var(--base3);
+  border: 2px dashed var(--base1);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.file-upload-label:hover {
+  border-color: var(--blue);
+  background-color: var(--base2);
+}
+
+.upload-icon {
+  font-size: 1.5rem;
+}
+
+.upload-text {
+  font-weight: 500;
+  color: var(--base01);
+}
+
+#epub-upload {
+  display: none;
+}
+
+.file-info {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background-color: var(--base3);
+  border-radius: 4px;
+  font-size: 0.875rem;
+  color: var(--base01);
+}
+
+.file-info.hidden {
+  display: none;
+}
+
+/* Controls */
+.control-group {
+  margin-bottom: 1.25rem;
+}
+
+.control-group label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--base01);
+  margin-bottom: 0.5rem;
+}
+
+.control-group select,
+.control-group input[type="range"] {
+  width: 100%;
+}
+
+.control-group select {
+  padding: 0.5rem;
+  background-color: var(--base3);
+  border: 1px solid var(--base1);
+  border-radius: 4px;
+  color: var(--base00);
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.control-group select:focus {
+  outline: none;
+  border-color: var(--blue);
+}
+
+.control-group input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  background: var(--base1);
+  border-radius: 3px;
+  outline: none;
+}
+
+.control-group input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background: var(--blue);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.control-group input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: var(--blue);
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+}
+
+/* Custom CSS Textarea */
+#custom-css {
+  width: 100%;
+  min-height: 120px;
+  padding: 0.75rem;
+  background-color: var(--base3);
+  border: 1px solid var(--base1);
+  border-radius: 4px;
+  color: var(--base00);
+  font-family: "Monoid", "Courier New", monospace;
+  font-size: 0.8125rem;
+  resize: vertical;
+}
+
+#custom-css:focus {
+  outline: none;
+  border-color: var(--blue);
+}
+
+#custom-css::placeholder {
+  color: var(--base1);
+}
+
+/* Convert Button */
+.convert-btn {
+  width: 100%;
+  padding: 1rem;
+  background-color: var(--blue);
+  color: var(--base3);
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.convert-btn:hover:not(:disabled) {
+  background-color: var(--cyan);
+}
+
+.convert-btn:disabled {
+  background-color: var(--base1);
+  color: var(--base0);
+  cursor: not-allowed;
+}
+
+/* Limit warning */
+#limit-value-group {
+  padding: 0.75rem;
+  background-color: var(--base3);
+  border-radius: 4px;
+  border: 1px solid var(--yellow);
+}
+
+#limit-value-group label {
+  color: var(--orange);
+  font-weight: 600;
+}
+
+/* Progress */
+.progress-container {
+  margin-top: 1rem;
+}
+
+.progress-container.hidden {
+  display: none;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background-color: var(--base1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: var(--green);
+  transition: width 0.3s ease;
+  width: 0%;
+}
+
+.progress-text {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--base01);
+  text-align: center;
+}
+
+/* Preview Panel */
+.preview-panel {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--base3);
+  overflow: hidden;
+}
+
+.preview-header {
+  padding: 1.5rem 2rem;
+  background-color: var(--base2);
+  border-bottom: 2px solid var(--base1);
+}
+
+.chapter-info h2 {
+  font-size: 1.25rem;
+  color: var(--base02);
+  margin-bottom: 0.25rem;
+}
+
+.page-info {
+  font-size: 0.875rem;
+  color: var(--base01);
+}
+
+.preview-container {
+  flex: 1;
+  display: flex;
+  gap: 2rem;
+  padding: 2rem;
+  overflow: hidden;
+}
+
+.preview-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.preview-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--base01);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: center;
+}
+
+.preview-title-wip {
+  color: var(--orange);
+}
+
+.wip-badge {
+  font-size: 0.75rem;
+  color: var(--base1);
+  font-weight: normal;
+  text-transform: none;
+}
+
+.preview-viewport {
+  width: 480px;
+  height: 800px;
+  background-color: #fff;
+  border: 2px solid var(--base1);
+  border-radius: 4px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  position: relative;
+}
+
+.preview-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--base1);
+  font-size: 1rem;
+}
+
+/* Preview Controls */
+.preview-controls {
+  display: flex;
+  justify-content: space-between;
+  padding: 1.5rem 2rem;
+  background-color: var(--base2);
+  border-top: 2px solid var(--base1);
+}
+
+.nav-group {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.nav-btn {
+  padding: 0.75rem 1.5rem;
+  background-color: var(--base3);
+  color: var(--base01);
+  border: 1px solid var(--base1);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nav-btn:hover:not(:disabled) {
+  background-color: var(--base2);
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
+.nav-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Virtual Device (Hidden) */
+.virtual-device {
+  position: fixed;
+  left: -10000px;
+  top: 0;
+  width: 480px;
+  height: 800px;
+  background-color: #fff;
+  overflow: hidden;
+  box-sizing: border-box;
+  visibility: visible;
+  /* Column settings are set dynamically by paginator.js */
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .container {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-panel {
+    border-right: none;
+    border-bottom: 2px solid var(--base1);
+    max-height: 50vh;
+  }
+
+  .preview-container {
+    padding: 1rem;
+  }
+
+  .preview-viewport {
+    transform: scale(0.7);
+    transform-origin: center;
+  }
+}

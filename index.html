@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EPUB to Image Converter</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/reader.css">
+    <link rel="manifest" href="manifest.json">
+</head>
+<body>
+    <div class="container">
+        <!-- Left Panel: Settings -->
+        <aside class="settings-panel">
+            <header>
+                <h1>EPUB to Images</h1>
+                <p class="subtitle">Convert for Xteink X4 (480×800)</p>
+            </header>
+
+            <div class="settings-section">
+                <label for="epub-upload" class="file-upload-label">
+                    <span class="upload-icon">📖</span>
+                    <span class="upload-text">Choose EPUB File</span>
+                    <input type="file" id="epub-upload" accept=".epub" />
+                </label>
+                <div id="file-info" class="file-info hidden"></div>
+            </div>
+
+            <div class="settings-section">
+                <h2>Typography</h2>
+
+                <div class="control-group">
+                    <label for="font-family">Font Family</label>
+                    <select id="font-family">
+                        <option value="Inter">Inter (Sans-serif)</option>
+                        <option value="Reforma">Reforma (Serif)</option>
+                        <option value="Roboto">Roboto (Sans-serif)</option>
+                        <option value="Monoid">Monoid (Monospace)</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label for="font-size">Font Size: <span id="font-size-value">16</span>px</label>
+                    <input type="range" id="font-size" min="12" max="24" value="16" step="1">
+                </div>
+
+                <div class="control-group">
+                    <label for="line-height">Line Height: <span id="line-height-value">1.5</span></label>
+                    <input type="range" id="line-height" min="1.2" max="2.0" value="1.5" step="0.1">
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h2>Image Quality</h2>
+
+                <div class="control-group">
+                    <label for="jpeg-quality">JPEG Quality: <span id="jpeg-quality-value">85</span>%</label>
+                    <input type="range" id="jpeg-quality" min="60" max="100" value="85" step="5">
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h2>Output Format</h2>
+
+                <div class="control-group">
+                    <label for="output-format">Format</label>
+                    <select id="output-format">
+                        <option value="epub">EPUB (Image-based)</option>
+                        <option value="zip">ZIP (Images only)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h2>Export Limits (Testing)</h2>
+
+                <div class="control-group">
+                    <label for="limit-type">Limit by</label>
+                    <select id="limit-type">
+                        <option value="none">No limit (full book)</option>
+                        <option value="pages">Number of pages</option>
+                        <option value="chapters">Number of chapters</option>
+                    </select>
+                </div>
+
+                <div class="control-group" id="limit-value-group" style="display: none;">
+                    <label for="limit-value">Limit to: <span id="limit-value-display">1</span></label>
+                    <input type="range" id="limit-value" min="1" max="10" value="1" step="1">
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h2>Custom CSS</h2>
+                <textarea id="custom-css" placeholder="/* Add custom styles for book content */
+p { margin-bottom: 1em; }
+h1 { margin-top: 2em; }"></textarea>
+            </div>
+
+            <div class="settings-section">
+                <button id="convert-btn" class="convert-btn" disabled>
+                    Convert & Export
+                </button>
+                <div id="progress-container" class="progress-container hidden">
+                    <div class="progress-bar">
+                        <div id="progress-fill" class="progress-fill"></div>
+                    </div>
+                    <p id="progress-text" class="progress-text"></p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Right Panel: Preview -->
+        <main class="preview-panel">
+            <div class="preview-header">
+                <div class="chapter-info">
+                    <h2 id="chapter-title">No EPUB loaded</h2>
+                    <p id="page-info" class="page-info"></p>
+                </div>
+            </div>
+
+            <div class="preview-container">
+                <div class="preview-column">
+                    <h3 class="preview-title">Image Preview</h3>
+                    <div id="preview-viewport" class="preview-viewport">
+                        <div class="preview-placeholder">
+                            <p>Upload an EPUB file to preview</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="preview-column">
+                    <h3 class="preview-title preview-title-wip">HTML Preview <span class="wip-badge">(WIP, broken)</span></h3>
+                    <div id="html-preview-viewport" class="preview-viewport">
+                        <div class="preview-placeholder">
+                            <p>HTML preview</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="preview-controls">
+                <div class="nav-group">
+                    <button id="prev-chapter-btn" class="nav-btn" disabled>← Prev Chapter</button>
+                    <button id="prev-page-btn" class="nav-btn" disabled>← Prev Page</button>
+                </div>
+                <div class="nav-group">
+                    <button id="next-page-btn" class="nav-btn" disabled>Next Page →</button>
+                    <button id="next-chapter-btn" class="nav-btn" disabled>Next Chapter →</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Hidden rendering container -->
+    <div id="virtual-device" class="virtual-device"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="js/html2canvas.min.js"></script>
+
+    <!-- Hyphenopoly Configuration -->
+    <script>
+        var Hyphenopoly = {
+            require: {
+                "en-us": "FORCEHYPHENOPOLY"
+            },
+            setup: {
+                selectors: {
+                    "#virtual-device p": {}
+                }
+            },
+            paths: {
+                patterndir: "js/patterns/",
+                maindir: "js/"
+            }
+        };
+    </script>
+    <script src="js/Hyphenopoly_Loader.js"></script>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>

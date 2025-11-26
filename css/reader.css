@@ -1,0 +1,183 @@
+/* Base styles for EPUB book content */
+/* These apply to the content inside the preview and virtual device */
+
+#virtual-device,
+.preview-viewport {
+  /* Typography defaults */
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  color: #000;
+
+  /* Text rendering */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Basic HTML elements */
+#virtual-device h1,
+#virtual-device h2,
+#virtual-device h3,
+#virtual-device h4,
+#virtual-device h5,
+#virtual-device h6 {
+  font-weight: 600;
+  line-height: 1.25;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+}
+
+#virtual-device h1 { font-size: 1.75em; }
+#virtual-device h2 { font-size: 1.5em; }
+#virtual-device h3 { font-size: 1.25em; }
+#virtual-device h4 { font-size: 1.1em; }
+#virtual-device h5 { font-size: 1em; }
+#virtual-device h6 { font-size: 0.9em; }
+
+#virtual-device p {
+  margin-bottom: 1em;
+  text-align: justify;
+  hyphens: manual;
+  -webkit-hyphens: manual;
+}
+
+#virtual-device blockquote {
+  margin: 1.5em 1em;
+  padding-left: 1em;
+  border-left: 3px solid #ccc;
+  font-style: italic;
+}
+
+#virtual-device ul,
+#virtual-device ol {
+  margin: 1em 0;
+  padding-left: 2em;
+}
+
+#virtual-device li {
+  margin-bottom: 0.5em;
+}
+
+#virtual-device pre {
+  background-color: #f5f5f5;
+  padding: 1em;
+  overflow-x: auto;
+  font-family: "Monoid", "Courier New", monospace;
+  font-size: 0.875em;
+  line-height: 1.4;
+  margin: 1em 0;
+}
+
+#virtual-device code {
+  font-family: "Monoid", "Courier New", monospace;
+  font-size: 0.9em;
+  background-color: #f5f5f5;
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+}
+
+#virtual-device pre code {
+  background-color: transparent;
+  padding: 0;
+}
+
+#virtual-device a {
+  color: #268bd2;
+  text-decoration: none;
+}
+
+#virtual-device a:hover {
+  text-decoration: underline;
+}
+
+#virtual-device img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 1em auto;
+}
+
+#virtual-device hr {
+  border: none;
+  border-top: 1px solid #ccc;
+  margin: 2em 0;
+}
+
+#virtual-device em,
+#virtual-device i {
+  font-style: italic;
+}
+
+#virtual-device strong,
+#virtual-device b {
+  font-weight: bold;
+}
+
+#virtual-device sup,
+#virtual-device sub {
+  font-size: 0.75em;
+  line-height: 0;
+  position: relative;
+  vertical-align: baseline;
+}
+
+#virtual-device sup {
+  top: -0.5em;
+}
+
+#virtual-device sub {
+  bottom: -0.25em;
+}
+
+/* Table styles */
+#virtual-device table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5em 0;
+}
+
+#virtual-device th,
+#virtual-device td {
+  padding: 0.5em;
+  border: 1px solid #ddd;
+  text-align: left;
+}
+
+#virtual-device th {
+  background-color: #f5f5f5;
+  font-weight: 600;
+}
+
+/* EPUB-specific elements */
+#virtual-device .epub-author,
+#virtual-device .epub-title {
+  text-align: center;
+  margin: 2em 0;
+}
+
+#virtual-device .epub-title {
+  font-size: 2em;
+  font-weight: 700;
+}
+
+#virtual-device .epub-author {
+  font-size: 1.25em;
+  font-style: italic;
+}
+
+/* Page breaks - these will be handled by columnization */
+#virtual-device .page-break,
+#virtual-device .epub-pagebreak {
+  break-after: column;
+  page-break-after: always;
+}
+
+/* Remove default margins for first/last elements */
+#virtual-device > *:first-child {
+  margin-top: 0;
+}
+
+#virtual-device > *:last-child {
+  margin-bottom: 0;
+}
