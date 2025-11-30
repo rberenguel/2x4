@@ -347,7 +347,7 @@ class EPUBConverterApp {
       if (outputFormat === "epub") {
         this.epubBuilder.clear();
         this.epubBuilder.setMetadata({
-          title: this.parser.metadata.title,
+          title: `${this.parser.metadata.title} (x4-imaged)`,
           creator: this.parser.metadata.creator,
           language: this.parser.metadata.language,
         });
