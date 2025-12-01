@@ -369,6 +369,37 @@ body {
   color: var(--base01);
 }
 
+/* Preview Tabs - hidden on desktop, shown on narrow screens */
+.preview-tabs {
+  display: none;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.preview-tab {
+  padding: 0.5rem 1rem;
+  background-color: var(--base3);
+  color: var(--base01);
+  border: 1px solid var(--base1);
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.preview-tab:hover {
+  background-color: var(--base2);
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
+.preview-tab.active {
+  background-color: var(--blue);
+  color: var(--base3);
+  border-color: var(--blue);
+}
+
 .preview-container {
   flex: 1;
   display: flex;
@@ -529,6 +560,22 @@ body {
 }
 
 /* Responsive */
+/* Show tabs when screen is too narrow for all three previews */
+@media (max-width: 1800px) {
+  .preview-tabs {
+    display: flex;
+  }
+
+  .preview-column {
+    display: none;
+  }
+
+  .preview-column.active {
+    display: flex;
+    flex: 1;
+  }
+}
+
 @media (max-width: 1024px) {
   .container {
     grid-template-columns: 1fr;

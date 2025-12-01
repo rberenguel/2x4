@@ -258,10 +258,15 @@ h1 { margin-top: 2em; }"
             <h2 id="chapter-title">No EPUB loaded</h2>
             <p id="page-info" class="page-info"></p>
           </div>
+          <div class="preview-tabs">
+            <button class="preview-tab active" data-preview="actual-size">Actual Size</button>
+            <button class="preview-tab" data-preview="image">Image</button>
+            <button class="preview-tab" data-preview="html">HTML</button>
+          </div>
         </div>
 
         <div class="preview-container">
-          <div class="preview-column">
+          <div class="preview-column" data-preview="actual-size">
             <h3 class="preview-title">Actual Screen Size (5.5cm × 9cm)</h3>
             <div class="calibration-control">
               <label for="size-calibration" style="font-size: 0.75rem; color: var(--base01);">
@@ -283,7 +288,7 @@ h1 { margin-top: 2em; }"
               </div>
             </div>
           </div>
-          <div class="preview-column">
+          <div class="preview-column" data-preview="image">
             <h3 class="preview-title">Image Preview</h3>
             <div id="preview-viewport" class="preview-viewport">
               <div class="preview-placeholder">
@@ -291,7 +296,7 @@ h1 { margin-top: 2em; }"
               </div>
             </div>
           </div>
-          <div class="preview-column">
+          <div class="preview-column" data-preview="html">
             <h3 class="preview-title">HTML Preview</h3>
             <div id="html-preview-viewport" class="preview-viewport">
               <div class="preview-placeholder">

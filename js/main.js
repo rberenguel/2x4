@@ -35,6 +35,7 @@ class EPUBConverterApp {
     this.initializeUI();
     this.attachEventListeners();
     this.initializeCollapsibleSections();
+    this.initializePreviewTabs();
     this.preloadFonts();
     this.loadCalibrationScale();
   }
@@ -150,6 +151,35 @@ class EPUBConverterApp {
       header.addEventListener('click', () => {
         const section = header.parentElement;
         section.classList.toggle('collapsed');
+      });
+    });
+  }
+
+  initializePreviewTabs() {
+    const tabs = document.querySelectorAll('.preview-tab');
+    const columns = document.querySelectorAll('.preview-column');
+
+    // Set first column as active by default
+    if (columns.length > 0) {
+      columns[0].classList.add('active');
+    }
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const previewType = tab.dataset.preview;
+
+        // Update active tab
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+
+        // Update active column
+        columns.forEach(col => {
+          if (col.dataset.preview === previewType) {
+            col.classList.add('active');
+          } else {
+            col.classList.remove('active');
+          }
+        });
       });
     });
   }
