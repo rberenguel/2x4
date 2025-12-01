@@ -43,6 +43,11 @@ class EPUBConverterApp {
       customCSS: document.getElementById("custom-css"),
       applyCSSBtn: document.getElementById("apply-css-btn"),
       outputFormat: document.getElementById("output-format"),
+      xtcSplitSettings: document.getElementById("xtc-split-settings"),
+      xtcSplitPages: document.getElementById("xtc-split-pages"),
+      xtcSplitValue: document.getElementById("xtc-split-value"),
+      xtcFilenameSettings: document.getElementById("xtc-filename-settings"),
+      xtcFilenamePattern: document.getElementById("xtc-filename-pattern"),
       limitType: document.getElementById("limit-type"),
       limitValue: document.getElementById("limit-value"),
       limitValueDisplay: document.getElementById("limit-value-display"),
@@ -58,6 +63,9 @@ class EPUBConverterApp {
       nextPageBtn: document.getElementById("next-page-btn"),
       nextChapterBtn: document.getElementById("next-chapter-btn"),
     };
+
+    // Initialize output format UI
+    this.updateOutputFormatUI();
   }
 
   attachEventListeners() {
@@ -76,6 +84,10 @@ class EPUBConverterApp {
       this.renderer.setJPEGQuality(e.target.value / 100);
     });
     this.elements.applyCSSBtn.addEventListener("click", () => this.updatePaginatorSettings());
+    this.elements.outputFormat.addEventListener("change", () => this.updateOutputFormatUI());
+    this.elements.xtcSplitPages.addEventListener("input", (e) => {
+      this.elements.xtcSplitValue.textContent = e.target.value;
+    });
     this.elements.limitType.addEventListener("change", (e) => {
       const limitType = e.target.value;
       this.elements.limitValueGroup.style.display = limitType === "none" ? "none" : "block";
@@ -93,6 +105,12 @@ class EPUBConverterApp {
     this.elements.nextPageBtn.addEventListener("click", () => this.goToNextPage());
     this.elements.nextChapterBtn.addEventListener("click", () => this.goToNextChapter());
     this.elements.convertBtn.addEventListener("click", () => this.startConversion());
+  }
+
+  updateOutputFormatUI() {
+    const format = this.elements.outputFormat.value;
+    this.elements.xtcSplitSettings.style.display = (format === 'xtc') ? 'block' : 'none';
+    this.elements.xtcFilenameSettings.style.display = (format === 'xtc') ? 'block' : 'none';
   }
 
   async preloadFonts() {
@@ -250,6 +268,9 @@ class EPUBConverterApp {
         customCSS: this.elements.customCSS.value,
       };
 
+      // Apply settings to paginator BEFORE conversion starts
+      this.paginator.updateSettings(settings);
+
       const limitType = this.elements.limitType.value;
       const limitValue = parseInt(this.elements.limitValue.value);
       let globalPageNumber = 1;
@@ -258,6 +279,20 @@ class EPUBConverterApp {
 
       if (limitType === "chapters") totalChapters = Math.min(limitValue, totalChapters);
       else if (limitType === "pages") maxPages = limitValue;
+
+      // XTC volume splitting variables
+      const xtcSplitPages = outputFormat === "xtc" ? parseInt(this.elements.xtcSplitPages.value) : 0;
+      const xtcVolumes = [];
+      let currentVolume = null;
+      let pagesInCurrentVolume = 0;
+      let volumeNumber = 1;
+
+      // Time tracking
+      let pageStartTime = null;
+      let totalRenderTime = 0;
+      let pagesRendered = 0;
+      let avgTimePerPage = 0;
+      let estimatedTotalPages = 0;
 
       // === PROCESSING LOOP ===
       for (let chapterIndex = 0; chapterIndex < totalChapters; chapterIndex++) {
@@ -271,15 +306,66 @@ class EPUBConverterApp {
         // Add chapter marker for XTC format (0-indexed page number)
         if (outputFormat === "xtc") {
           const chapterTitle = this.parser.getChapterTitle(chapterIndex);
-          this.xtcBuilder.addChapter(chapterTitle, globalPageNumber - 1);
+          if (currentVolume) {
+            currentVolume.builder.addChapter(chapterTitle, pagesInCurrentVolume);
+          } else {
+            this.xtcBuilder.addChapter(chapterTitle, globalPageNumber - 1);
+          }
         }
 
         for (let pageIndex = 0; pageIndex < pageCount; pageIndex++) {
           if (globalPageNumber > maxPages) break;
 
+          // Check if we need to start a new XTC volume
+          if (outputFormat === "xtc" && (currentVolume === null || pagesInCurrentVolume >= xtcSplitPages)) {
+            if (currentVolume !== null) {
+              // Generate and download completed volume immediately
+              const currentProgress = (chapterIndex * 100 + (pageIndex / pageCount) * 100) / totalChapters;
+              this.updateProgress(`Generating & downloading volume ${currentVolume.volumeNumber}...`, currentProgress);
+
+              const xtcBuffer = currentVolume.builder.generate();
+              const outputBlob = new Blob([xtcBuffer], { type: "application/octet-stream" });
+
+              const customPattern = this.elements.xtcFilenamePattern.value.trim();
+              const baseTitle = customPattern ? this.sanitizeFilename(customPattern) : this.sanitizeFilename(this.parser.metadata.title);
+              const startPage = String(currentVolume.startPage).padStart(4, "0");
+              const endPage = String(currentVolume.startPage + currentVolume.pagesInVolume - 1).padStart(4, "0");
+              const filename = `${startPage}-${baseTitle}-${endPage}.xtc`;
+
+              const a = document.createElement("a");
+              a.href = URL.createObjectURL(outputBlob);
+              a.download = filename;
+              a.click();
+              URL.revokeObjectURL(a.href);
+
+              await new Promise(resolve => setTimeout(resolve, 300));
+
+              xtcVolumes.push(currentVolume);
+              volumeNumber++;
+            }
+
+            // Create new volume
+            const xtcBuilder = new XTCBuilder();
+            xtcBuilder.setMetadata({
+              title: this.parser.metadata.title,
+              creator: this.parser.metadata.creator || "Unknown"
+            });
+
+            currentVolume = {
+              builder: xtcBuilder,
+              volumeNumber: volumeNumber,
+              startPage: globalPageNumber,
+              pagesInVolume: 0
+            };
+
+            pagesInCurrentVolume = 0;
+          }
+
           this.paginator.goToPage(pageIndex);
           const progress = (chapterIndex * 100 + (pageIndex / pageCount) * 100) / totalChapters;
-          this.updateProgress(`Converting page ${globalPageNumber}... (Ch ${chapterIndex + 1}, Pg ${pageIndex + 1})`, progress);
+
+          // Start timing this page
+          pageStartTime = performance.now();
 
           const pageElement = this.paginator.getCurrentPageElement();
 
@@ -299,7 +385,13 @@ class EPUBConverterApp {
                  } else {
                    // Convert Blob to ArrayBuffer for XTC
                    const xthBuffer = await xthBlob.arrayBuffer();
-                   this.xtcBuilder.addPage(xthBuffer);
+                   if (currentVolume) {
+                     currentVolume.builder.addPage(xthBuffer);
+                     currentVolume.pagesInVolume++;
+                     pagesInCurrentVolume++;
+                   } else {
+                     this.xtcBuilder.addPage(xthBuffer);
+                   }
                    console.log(`Added page ${globalPageNumber} to XTC (${xthBuffer.byteLength} bytes)`);
                  }
               } else {
@@ -324,7 +416,39 @@ class EPUBConverterApp {
           }
           // <<< END OF FIXED LOGIC
 
+          // Track render time
+          const pageEndTime = performance.now();
+          const renderTime = pageEndTime - pageStartTime;
+          totalRenderTime += renderTime;
+          pagesRendered++;
+
+          // Calculate time estimate
+          let timeEstimate = '';
+          if (pagesRendered >= 3 && estimatedTotalPages > 0) {
+            avgTimePerPage = totalRenderTime / pagesRendered;
+            const pagesRemaining = Math.min(estimatedTotalPages, maxPages) - pagesRendered;
+            const secondsRemaining = Math.ceil((avgTimePerPage * pagesRemaining) / 1000);
+            if (secondsRemaining > 60) {
+              const minutes = Math.floor(secondsRemaining / 60);
+              const seconds = secondsRemaining % 60;
+              timeEstimate = ` • ~${minutes}m${seconds}s left`;
+            } else if (secondsRemaining > 5) {
+              timeEstimate = ` • ~${secondsRemaining}s left`;
+            }
+          }
+
+          this.updateProgress(`Converting page ${globalPageNumber}... (Ch ${chapterIndex + 1}, Pg ${pageIndex + 1})${timeEstimate}`, progress);
+
           globalPageNumber++;
+        }
+
+        // Update estimated total pages after rendering this chapter
+        if (estimatedTotalPages === 0) {
+          estimatedTotalPages = (globalPageNumber - 1) * totalChapters;
+        } else {
+          const chaptersProcessed = chapterIndex + 1;
+          const avgPagesPerChapter = (globalPageNumber - 1) / chaptersProcessed;
+          estimatedTotalPages = Math.ceil(avgPagesPerChapter * totalChapters);
         }
       }
 
@@ -333,10 +457,29 @@ class EPUBConverterApp {
       let filename;
 
       if (outputFormat === "xtc") {
-        this.updateProgress("Generating XTC file...", 100);
-        const xtcBuffer = this.xtcBuilder.generate();
-        outputBlob = new Blob([xtcBuffer], { type: "application/octet-stream" });
-        filename = `${this.sanitizeFilename(this.parser.metadata.title)}.xtc`;
+        // Generate final volume if using splitting
+        if (currentVolume !== null && currentVolume.pagesInVolume > 0) {
+          this.updateProgress(`Generating final volume ${currentVolume.volumeNumber}...`, 100);
+
+          const xtcBuffer = currentVolume.builder.generate();
+          outputBlob = new Blob([xtcBuffer], { type: "application/octet-stream" });
+
+          const customPattern = this.elements.xtcFilenamePattern.value.trim();
+          const baseTitle = customPattern ? this.sanitizeFilename(customPattern) : this.sanitizeFilename(this.parser.metadata.title);
+          const startPage = String(currentVolume.startPage).padStart(4, "0");
+          const endPage = String(currentVolume.startPage + currentVolume.pagesInVolume - 1).padStart(4, "0");
+          filename = `${startPage}-${baseTitle}-${endPage}.xtc`;
+
+          xtcVolumes.push(currentVolume);
+        } else {
+          // Single XTC file (no splitting)
+          this.updateProgress("Generating XTC file...", 100);
+          const xtcBuffer = this.xtcBuilder.generate();
+          outputBlob = new Blob([xtcBuffer], { type: "application/octet-stream" });
+          const customPattern = this.elements.xtcFilenamePattern.value.trim();
+          const baseTitle = customPattern ? this.sanitizeFilename(customPattern) : this.sanitizeFilename(this.parser.metadata.title);
+          filename = `${baseTitle}.xtc`;
+        }
       } else if (isZipBased) {
         this.updateProgress("Generating ZIP file...", 100);
         outputBlob = await zip.generateAsync({ type: "blob" });
@@ -355,7 +498,11 @@ class EPUBConverterApp {
       a.click();
       URL.revokeObjectURL(a.href);
 
-      this.updateProgress(`Conversion complete! ${globalPageNumber - 1} pages exported as ${outputFormat.toUpperCase()}.`, 100);
+      let completionMsg = `Conversion complete! ${globalPageNumber - 1} pages exported as ${outputFormat.toUpperCase()}.`;
+      if (outputFormat === "xtc" && xtcVolumes.length > 0) {
+        completionMsg = `Conversion complete! ${globalPageNumber - 1} pages exported as ${xtcVolumes.length} XTC volume(s).`;
+      }
+      this.updateProgress(completionMsg, 100);
       setTimeout(() => {
         this.elements.progressContainer.classList.add("hidden");
         this.elements.convertBtn.disabled = false;

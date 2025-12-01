@@ -18,20 +18,12 @@ A browser-based PWA that converts EPUB files into optimized JPEG images for e-in
 
 ### 1. Serve the application
 
-You need a local HTTP server. Choose one:
+You need a local HTTP server. For example,
 
 ```bash
 # Python 3
 python3 -m http.server 8000
 
-# Python 2
-python -m SimpleHTTPServer 8000
-
-# Node.js (if you have http-server installed)
-npx http-server -p 8000
-
-# PHP
-php -S localhost:8000
 ```
 
 Then open `http://localhost:8000` in your browser.
@@ -57,26 +49,9 @@ Then open `http://localhost:8000` in your browser.
 
 ### 3. Transfer to device
 
+- **XTC format:** Preferred. Transfer the `.epub` file directly to your Xteink X4
 - **EPUB format:** Transfer the `.epub` file directly to your Xteink X4
 - **ZIP format:** Extract and transfer the individual images
-
-## Project Structure
-
-```
-epubx4/
-├── index.html              # Main HTML
-├── manifest.json           # PWA manifest
-├── css/
-│   ├── style.css          # App UI (Solarized Light)
-│   └── reader.css         # Book content styles
-├── js/
-│   ├── main.js            # Main application logic
-│   ├── epub-parser.js     # EPUB parsing with JSZip
-│   ├── font-embed.js      # Font loading and base64 encoding
-│   ├── paginator.js       # CSS column-based pagination
-│   └── renderer.js        # SVG-to-Canvas rendering
-└── fonts/                 # Web fonts (Inter, Reforma, Roboto, Monoid)
-```
 
 ## Technical Details
 
@@ -100,21 +75,11 @@ epubx4/
 
 Requires modern browser with ES6 modules support.
 
-## Limitations (v0)
-
-- No TOC (Table of Contents) preservation
-- No special handling for existing images, code blocks, or formulas
-- Memory limited by browser (very large EPUBs may cause issues)
-
-## Roadmap
-
-- **v1:** EPUB output (image-based EPUB files)
-- **v2:** TOC preservation and mapping
-- **v3:** Advanced content handling (images, code, formulas)
-
 ## Credits
 
-Rendering approach inspired by [YACME](https://github.com/ruben-vb/yacme)'s SVG-to-Canvas pipeline.
+- Rendering approach inspired by [YACME](https://github.com/ruben-vb/yacme)'s SVG-to-Canvas pipeline.
+- Initial XTC implementation based on [u/h0rm0n](https://x4converter.rho.sh/)'s version (originally posted [here](https://www.reddit.com/r/xteinkereader/comments/1pad8mc/i_built_a_tool_to_convert_epubs_to_xtc_set_of/))
+- Specs from [Serge Baranov](https://github.com/CrazyCoder) ([gist](https://gist.github.com/CrazyCoder/b125f26d6987c0620058249f59f1327d)) and thanks to XTeink themselves
 
 ## License
 

@@ -98,6 +98,37 @@
               <option value="zip">ZIP (Images only)</option>
             </select>
           </div>
+
+          <div class="control-group" id="xtc-split-settings" style="display: none;">
+            <label for="xtc-split-pages">
+              Split into volumes: <span id="xtc-split-value">100</span> pages each
+            </label>
+            <input
+              type="range"
+              id="xtc-split-pages"
+              min="50"
+              max="500"
+              value="100"
+              step="50"
+            />
+            <small style="color: #888; display: block; margin-top: 4px;">
+              Recommended: 100 pages (~9MB per file)
+            </small>
+          </div>
+
+          <div class="control-group" id="xtc-filename-settings" style="display: none;">
+            <label for="xtc-filename-pattern">
+              Filename pattern <small>(optional, default: book title)</small>
+            </label>
+            <input
+              type="text"
+              id="xtc-filename-pattern"
+              placeholder="my-book"
+            />
+            <small style="color: #888; display: block; margin-top: 0.25rem; font-size: 0.75rem;">
+              Files will be named: 0001-pattern-0100.xtc
+            </small>
+          </div>
         </div>
 
         <div class="settings-section">
