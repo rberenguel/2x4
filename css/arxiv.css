@@ -152,7 +152,7 @@
 /* Code blocks */
 .arxiv-content pre,
 .arxiv-content code {
-  font-family: 'Monoid', 'Courier New', monospace;
+  font-family: "Monoid", "Courier New", monospace;
   font-size: 0.79em; /* 11/14 */
   background: #f5f5f5;
   padding: 0.2em 0.4em;

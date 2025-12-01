@@ -34,8 +34,14 @@ export class Renderer {
 
     ctx.drawImage(
       highResCanvas,
-      0, 0, highResCanvas.width, highResCanvas.height,
-      0, 0, this.width, this.height
+      0,
+      0,
+      highResCanvas.width,
+      highResCanvas.height,
+      0,
+      0,
+      this.width,
+      this.height,
     );
 
     return finalCanvas;
@@ -45,13 +51,18 @@ export class Renderer {
    * Internal: Renders element to high-res (1440x2400) canvas
    */
   async _renderToHighResCanvas(pageElement) {
-    if (typeof html2canvas === "undefined") throw new Error("html2canvas missing");
+    if (typeof html2canvas === "undefined")
+      throw new Error("html2canvas missing");
 
     const tempContainer = document.createElement("div");
     Object.assign(tempContainer.style, {
-      position: "absolute", left: "-9999px", top: "0",
-      width: `${this.width}px`, height: `${this.height}px`,
-      overflow: "hidden", backgroundColor: "#ffffff"
+      position: "absolute",
+      left: "-9999px",
+      top: "0",
+      width: `${this.width}px`,
+      height: `${this.height}px`,
+      overflow: "hidden",
+      backgroundColor: "#ffffff",
     });
 
     const clone = pageElement.cloneNode(true);
@@ -61,11 +72,12 @@ export class Renderer {
     // Hyphenate
     if (window.Hyphenopoly && window.Hyphenopoly.hyphenators) {
       const paragraphs = tempContainer.querySelectorAll("p");
-      for (const p of paragraphs) await window.Hyphenopoly.hyphenators["en-us"](p);
+      for (const p of paragraphs)
+        await window.Hyphenopoly.hyphenators["en-us"](p);
     }
 
     if (document.fonts) await document.fonts.ready;
-    
+
     // Increased delay to help prevent "Blob not found" errors
     await new Promise((resolve) => setTimeout(resolve, 150));
 
@@ -79,7 +91,7 @@ export class Renderer {
         width: this.width,
         height: this.height,
       });
-      
+
       this.applyGrayscale(canvas);
       return canvas;
     } finally {
@@ -101,12 +113,12 @@ export class Renderer {
   async renderPageToImage(pageElement, fontFamily, styles = {}) {
     const highResCanvas = await this._renderToHighResCanvas(pageElement);
     const finalCanvas = this.downscaleCanvas(highResCanvas);
-    
+
     return new Promise((resolve, reject) => {
       finalCanvas.toBlob(
-        (blob) => blob ? resolve(blob) : reject(new Error("Blob failed")),
+        (blob) => (blob ? resolve(blob) : reject(new Error("Blob failed"))),
         "image/jpeg",
-        this.jpegQuality
+        this.jpegQuality,
       );
     });
   }

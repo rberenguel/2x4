@@ -1,7 +1,6 @@
 /**
  * XTC Builder Module
  * Creates XTC container files for Xteink X4 devices.
- * Based on the format specification from xtc-sample.js
  */
 
 export class XTCBuilder {
@@ -10,7 +9,7 @@ export class XTCBuilder {
     this.chapters = [];
     this.metadata = {
       title: "Untitled",
-      creator: "Unknown"
+      creator: "Unknown",
     };
   }
 
@@ -40,7 +39,7 @@ export class XTCBuilder {
     this.chapters.push({
       name: normalizedName,
       startPage: startPage,
-      endPage: -1 // Will be calculated during generation
+      endPage: -1, // Will be calculated during generation
     });
   }
 
@@ -48,7 +47,10 @@ export class XTCBuilder {
    * Normalize chapter name (remove control chars, limit length)
    */
   normalizeChapterName(name) {
-    return name.replace(/[\x00-\x1F\x7F]/g, '').trim().substring(0, 79);
+    return name
+      .replace(/[\x00-\x1F\x7F]/g, "")
+      .trim()
+      .substring(0, 79);
   }
 
   /**
@@ -62,10 +64,14 @@ export class XTCBuilder {
     const indexEntrySize = 16;
 
     const actualPageCount = this.pages.length;
-    console.log(`XTCBuilder.generate(): ${actualPageCount} pages, ${this.chapters.length} chapters`);
+    console.log(
+      `XTCBuilder.generate(): ${actualPageCount} pages, ${this.chapters.length} chapters`,
+    );
 
     // Calculate chapter end pages
-    const validChapters = this.chapters.filter(c => c.startPage >= 0 && c.startPage < actualPageCount);
+    const validChapters = this.chapters.filter(
+      (c) => c.startPage >= 0 && c.startPage < actualPageCount,
+    );
     for (let i = 0; i < validChapters.length; i++) {
       if (i < validChapters.length - 1) {
         validChapters[i].endPage = validChapters[i + 1].startPage - 1;
@@ -137,13 +143,13 @@ export class XTCBuilder {
     }
 
     // Timestamp (0xF0-0xF3)
-    view.setUint32(metadataOffset + 0xF0, Math.floor(Date.now() / 1000), true);
+    view.setUint32(metadataOffset + 0xf0, Math.floor(Date.now() / 1000), true);
 
     // Reserved (0xF4-0xF5)
-    view.setUint16(metadataOffset + 0xF4, 0, true);
+    view.setUint16(metadataOffset + 0xf4, 0, true);
 
     // Chapter count (0xF6-0xF7)
-    view.setUint16(metadataOffset + 0xF6, chapterCount, true);
+    view.setUint16(metadataOffset + 0xf6, chapterCount, true);
 
     // === CHAPTERS (96 bytes each) ===
     for (let i = 0; i < validChapters.length; i++) {
@@ -203,7 +209,7 @@ export class XTCBuilder {
     this.chapters = [];
     this.metadata = {
       title: "Untitled",
-      creator: "Unknown"
+      creator: "Unknown",
     };
   }
 }

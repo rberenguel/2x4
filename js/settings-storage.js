@@ -3,12 +3,12 @@
  * Manages persistent font settings using IndexedDB
  */
 
-import { get, set } from './lib/idb-keyval.js';
+import { get, set } from "./lib/idb-keyval.js";
 
 export class SettingsStorage {
   constructor() {
-    this.GLOBAL_SETTINGS_KEY = '2x4:global-settings';
-    this.CALIBRATION_KEY = '2x4:display-calibration';
+    this.GLOBAL_SETTINGS_KEY = "2x4:global-settings";
+    this.CALIBRATION_KEY = "2x4:display-calibration";
   }
 
   /**
@@ -49,7 +49,7 @@ export class SettingsStorage {
       fontFamily: settings.fontFamily,
       fontSize: settings.fontSize,
       lineHeight: settings.lineHeight,
-      lastUpdated: Date.now()
+      lastUpdated: Date.now(),
     };
 
     // Save file-specific settings
@@ -68,7 +68,7 @@ export class SettingsStorage {
       fontFamily: settings.fontFamily,
       fontSize: settings.fontSize,
       lineHeight: settings.lineHeight,
-      lastUpdated: Date.now()
+      lastUpdated: Date.now(),
     };
 
     await set(this.GLOBAL_SETTINGS_KEY, settingsToSave);

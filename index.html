@@ -20,12 +20,32 @@
         </header>
 
         <div class="settings-section">
-          <div style="display: flex; gap: 1rem; margin-bottom: 0;">
-            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-              <input type="radio" id="mode-epub" name="mode" value="epub" checked />
+          <div style="display: flex; gap: 1rem; margin-bottom: 0">
+            <label
+              style="
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                cursor: pointer;
+              "
+            >
+              <input
+                type="radio"
+                id="mode-epub"
+                name="mode"
+                value="epub"
+                checked
+              />
               <span>EPUB</span>
             </label>
-            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+            <label
+              style="
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                cursor: pointer;
+              "
+            >
               <input type="radio" id="mode-arxiv" name="mode" value="arxiv" />
               <span>Arxiv</span>
             </label>
@@ -34,207 +54,259 @@
 
         <!-- EPUB Mode Sections -->
         <div id="epub-mode-sections">
-        <div class="settings-section">
-          <label for="epub-upload" class="file-upload-label">
-            <span class="upload-icon">📖</span>
-            <span class="upload-text">Choose EPUB File</span>
-            <input type="file" id="epub-upload" accept=".epub" />
-          </label>
-          <div id="file-info" class="file-info hidden"></div>
-        </div>
+          <div class="settings-section">
+            <label for="epub-upload" class="file-upload-label">
+              <span class="upload-icon">📖</span>
+              <span class="upload-text">Choose EPUB File</span>
+              <input type="file" id="epub-upload" accept=".epub" />
+            </label>
+            <div id="file-info" class="file-info hidden"></div>
+          </div>
         </div>
         <!-- End EPUB Mode Sections -->
 
         <!-- Arxiv Mode Sections -->
-        <div id="arxiv-mode-sections" style="display: none;">
-        <div class="settings-section">
-          <h2>Load Arxiv Paper</h2>
+        <div id="arxiv-mode-sections" style="display: none">
+          <div class="settings-section">
+            <h2>Load Arxiv Paper</h2>
 
-          <div class="control-group">
-            <label for="arxiv-url">Arxiv HTML URL</label>
-            <input
-              type="text"
-              id="arxiv-url"
-              placeholder="https://arxiv.org/html/2511.15304v2"
-              style="width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; font-family: monospace; font-size: 0.9rem;"
-            />
-            <button id="load-arxiv-btn" class="apply-css-btn" style="margin-top: 0.5rem;">
-              Load from URL
-            </button>
+            <div class="control-group">
+              <label for="arxiv-url">Arxiv HTML URL</label>
+              <input
+                type="text"
+                id="arxiv-url"
+                placeholder="https://arxiv.org/html/2511.15304v2"
+                style="
+                  width: 100%;
+                  padding: 0.5rem;
+                  border: 1px solid #ccc;
+                  border-radius: 4px;
+                  font-family: monospace;
+                  font-size: 0.9rem;
+                "
+              />
+              <button
+                id="load-arxiv-btn"
+                class="apply-css-btn"
+                style="margin-top: 0.5rem"
+              >
+                Load from URL
+              </button>
+            </div>
+
+            <div style="margin: 1rem 0; text-align: center; color: #888">
+              — OR —
+            </div>
+
+            <div class="control-group">
+              <label for="arxiv-html-paste"
+                >Paste HTML Source (from View Source)</label
+              >
+              <textarea
+                id="arxiv-html-paste"
+                placeholder="Paste full HTML source here (Ctrl+U / Cmd+Option+U → Select All → Copy)"
+                style="
+                  width: 100%;
+                  min-height: 150px;
+                  padding: 0.5rem;
+                  border: 1px solid #ccc;
+                  border-radius: 4px;
+                  font-family: monospace;
+                  font-size: 0.85rem;
+                  resize: vertical;
+                "
+              ></textarea>
+              <button
+                id="load-arxiv-paste-btn"
+                class="apply-css-btn"
+                style="margin-top: 0.5rem"
+              >
+                Load from HTML
+              </button>
+            </div>
+
+            <div id="arxiv-info" class="file-info hidden"></div>
           </div>
-
-          <div style="margin: 1rem 0; text-align: center; color: #888;">— OR —</div>
-
-          <div class="control-group">
-            <label for="arxiv-html-paste">Paste HTML Source (from View Source)</label>
-            <textarea
-              id="arxiv-html-paste"
-              placeholder="Paste full HTML source here (Ctrl+U / Cmd+Option+U → Select All → Copy)"
-              style="width: 100%; min-height: 150px; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; font-family: monospace; font-size: 0.85rem; resize: vertical;"
-            ></textarea>
-            <button id="load-arxiv-paste-btn" class="apply-css-btn" style="margin-top: 0.5rem;">
-              Load from HTML
-            </button>
-          </div>
-
-          <div id="arxiv-info" class="file-info hidden"></div>
-        </div>
         </div>
         <!-- End Arxiv Mode Sections -->
 
         <!-- Shared Settings (work for both EPUB and Arxiv modes) -->
         <div class="settings-section collapsed">
-          <h2 class="collapsible">Typography <span class="collapse-icon">▼</span></h2>
+          <h2 class="collapsible">
+            Typography <span class="collapse-icon">▼</span>
+          </h2>
           <div class="section-content">
-          <div class="control-group">
-            <label for="font-family">Font Family</label>
-            <select id="font-family">
-              <option value="Inter">Inter (Sans-serif)</option>
-              <option value="Reforma">Reforma (Serif)</option>
-              <option value="Roboto">Roboto (Sans-serif)</option>
-              <option value="Monoid">Monoid (Monospace)</option>
-            </select>
-          </div>
+            <div class="control-group">
+              <label for="font-family">Font Family</label>
+              <select id="font-family">
+                <option value="Inter">Inter (Sans-serif)</option>
+                <option value="Reforma">Reforma (Serif)</option>
+                <option value="Roboto">Roboto (Sans-serif)</option>
+                <option value="Monoid">Monoid (Monospace)</option>
+              </select>
+            </div>
 
-          <div class="control-group">
-            <label for="font-size"
-              >Font Size: <span id="font-size-value">16</span>px</label
-            >
-            <input
-              type="range"
-              id="font-size"
-              min="12"
-              max="24"
-              value="16"
-              step="1"
-            />
-          </div>
+            <div class="control-group">
+              <label for="font-size"
+                >Font Size: <span id="font-size-value">16</span>px</label
+              >
+              <input
+                type="range"
+                id="font-size"
+                min="12"
+                max="24"
+                value="16"
+                step="1"
+              />
+            </div>
 
-          <div class="control-group">
-            <label for="line-height"
-              >Line Height: <span id="line-height-value">1.5</span></label
-            >
-            <input
-              type="range"
-              id="line-height"
-              min="1.2"
-              max="2.0"
-              value="1.5"
-              step="0.1"
-            />
-          </div>
+            <div class="control-group">
+              <label for="line-height"
+                >Line Height: <span id="line-height-value">1.5</span></label
+              >
+              <input
+                type="range"
+                id="line-height"
+                min="1.2"
+                max="2.0"
+                value="1.5"
+                step="0.1"
+              />
+            </div>
           </div>
         </div>
 
         <div class="settings-section collapsed">
-          <h2 class="collapsible">Image Quality <span class="collapse-icon">▼</span></h2>
+          <h2 class="collapsible">
+            Image Quality <span class="collapse-icon">▼</span>
+          </h2>
           <div class="section-content">
-          <div class="control-group">
-            <label for="jpeg-quality"
-              >JPEG Quality: <span id="jpeg-quality-value">85</span>%</label
+            <div class="control-group">
+              <label for="jpeg-quality"
+                >JPEG Quality: <span id="jpeg-quality-value">85</span>%</label
+              >
+              <input
+                type="range"
+                id="jpeg-quality"
+                min="60"
+                max="100"
+                value="85"
+                step="5"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section collapsed">
+          <h2 class="collapsible">
+            Output Format <span class="collapse-icon">▼</span>
+          </h2>
+          <div class="section-content">
+            <div class="control-group">
+              <label for="output-format">Format</label>
+              <select id="output-format">
+                <option value="xtc">XTC (Native book format)</option>
+                <option value="xth">ZIP (XTH Files)</option>
+                <option value="epub">EPUB (Image-based)</option>
+                <option value="zip">ZIP (Images only)</option>
+              </select>
+            </div>
+
+            <div
+              class="control-group"
+              id="xtc-split-settings"
+              style="display: none"
             >
-            <input
-              type="range"
-              id="jpeg-quality"
-              min="60"
-              max="100"
-              value="85"
-              step="5"
-            />
-          </div>
-          </div>
-        </div>
+              <label for="xtc-split-pages">
+                Split into volumes: <span id="xtc-split-value">100</span> pages
+                each
+              </label>
+              <input
+                type="range"
+                id="xtc-split-pages"
+                min="50"
+                max="500"
+                value="100"
+                step="50"
+              />
+              <small style="color: #888; display: block; margin-top: 4px">
+                Recommended: 100 pages (~9MB per file)
+              </small>
+            </div>
 
-        <div class="settings-section collapsed">
-          <h2 class="collapsible">Output Format <span class="collapse-icon">▼</span></h2>
-          <div class="section-content">
-
-          <div class="control-group">
-            <label for="output-format">Format</label>
-            <select id="output-format">
-              <option value="xtc">XTC (Native book format)</option>
-              <option value="xth">ZIP (XTH Files)</option>
-              <option value="epub">EPUB (Image-based)</option>
-              <option value="zip">ZIP (Images only)</option>
-            </select>
-          </div>
-
-          <div class="control-group" id="xtc-split-settings" style="display: none;">
-            <label for="xtc-split-pages">
-              Split into volumes: <span id="xtc-split-value">100</span> pages each
-            </label>
-            <input
-              type="range"
-              id="xtc-split-pages"
-              min="50"
-              max="500"
-              value="100"
-              step="50"
-            />
-            <small style="color: #888; display: block; margin-top: 4px;">
-              Recommended: 100 pages (~9MB per file)
-            </small>
-          </div>
-
-          <div class="control-group" id="xtc-filename-settings" style="display: none;">
-            <label for="xtc-filename-pattern">
-              Filename pattern <small>(optional, default: book title)</small>
-            </label>
-            <input
-              type="text"
-              id="xtc-filename-pattern"
-              placeholder="my-book"
-            />
-            <small style="color: #888; display: block; margin-top: 0.25rem; font-size: 0.75rem;">
-              Files will be named: 0001-pattern-0100.xtc
-            </small>
-          </div>
-          </div>
-        </div>
-
-        <div class="settings-section collapsed">
-          <h2 class="collapsible">Export Limits (Testing) <span class="collapse-icon">▼</span></h2>
-          <div class="section-content">
-
-          <div class="control-group">
-            <label for="limit-type">Limit by</label>
-            <select id="limit-type">
-              <option value="none">No limit (full book)</option>
-              <option value="pages">Number of pages</option>
-              <option value="chapters">Number of chapters</option>
-            </select>
-          </div>
-
-          <div
-            class="control-group"
-            id="limit-value-group"
-            style="display: none"
-          >
-            <label for="limit-value"
-              >Limit to: <span id="limit-value-display">1</span></label
+            <div
+              class="control-group"
+              id="xtc-filename-settings"
+              style="display: none"
             >
-            <input
-              type="range"
-              id="limit-value"
-              min="1"
-              max="10"
-              value="1"
-              step="1"
-            />
-          </div>
+              <label for="xtc-filename-pattern">
+                Filename pattern <small>(optional, default: book title)</small>
+              </label>
+              <input
+                type="text"
+                id="xtc-filename-pattern"
+                placeholder="my-book"
+              />
+              <small
+                style="
+                  color: #888;
+                  display: block;
+                  margin-top: 0.25rem;
+                  font-size: 0.75rem;
+                "
+              >
+                Files will be named: 0001-pattern-0100.xtc
+              </small>
+            </div>
           </div>
         </div>
 
         <div class="settings-section collapsed">
-          <h2 class="collapsible">Custom CSS <span class="collapse-icon">▼</span></h2>
+          <h2 class="collapsible">
+            Export Limits (Testing) <span class="collapse-icon">▼</span>
+          </h2>
           <div class="section-content">
-          <textarea
-            id="custom-css"
-            placeholder="/* Add custom styles for book content */
+            <div class="control-group">
+              <label for="limit-type">Limit by</label>
+              <select id="limit-type">
+                <option value="none">No limit (full book)</option>
+                <option value="pages">Number of pages</option>
+                <option value="chapters">Number of chapters</option>
+              </select>
+            </div>
+
+            <div
+              class="control-group"
+              id="limit-value-group"
+              style="display: none"
+            >
+              <label for="limit-value"
+                >Limit to: <span id="limit-value-display">1</span></label
+              >
+              <input
+                type="range"
+                id="limit-value"
+                min="1"
+                max="10"
+                value="1"
+                step="1"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section collapsed">
+          <h2 class="collapsible">
+            Custom CSS <span class="collapse-icon">▼</span>
+          </h2>
+          <div class="section-content">
+            <textarea
+              id="custom-css"
+              placeholder="/* Add custom styles for book content */
 p { margin-bottom: 1em; }
 h1 { margin-top: 2em; }"
-          ></textarea>
-          <button id="apply-css-btn" class="apply-css-btn">Apply CSS</button>
+            ></textarea>
+            <button id="apply-css-btn" class="apply-css-btn">Apply CSS</button>
           </div>
         </div>
 
@@ -259,7 +331,9 @@ h1 { margin-top: 2em; }"
             <p id="page-info" class="page-info"></p>
           </div>
           <div class="preview-tabs">
-            <button class="preview-tab active" data-preview="actual-size">Actual Size</button>
+            <button class="preview-tab active" data-preview="actual-size">
+              Actual Size
+            </button>
             <button class="preview-tab" data-preview="image">Image</button>
             <button class="preview-tab" data-preview="html">HTML</button>
           </div>
@@ -269,7 +343,10 @@ h1 { margin-top: 2em; }"
           <div class="preview-column" data-preview="actual-size">
             <h3 class="preview-title">Actual Screen Size (5.5cm × 9cm)</h3>
             <div class="calibration-control">
-              <label for="size-calibration" style="font-size: 0.75rem; color: var(--base01);">
+              <label
+                for="size-calibration"
+                style="font-size: 0.75rem; color: var(--base01)"
+              >
                 Scale: <span id="size-calibration-value">100</span>%
               </label>
               <input
@@ -279,7 +356,7 @@ h1 { margin-top: 2em; }"
                 max="140"
                 value="100"
                 step="1"
-                style="width: 150px;"
+                style="width: 150px"
               />
             </div>
             <div id="actual-size-viewport" class="preview-viewport actual-size">

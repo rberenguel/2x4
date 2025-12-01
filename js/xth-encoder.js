@@ -13,21 +13,21 @@ export class XTHEncoder {
       threshold3: 255,
       ditherStrength: 80,
       invertColors: false,
-      enableDithering: true
+      enableDithering: true,
     };
   }
 
   /**
    * Encodes a Canvas element into an XTH file Blob
-   * @param {HTMLCanvasElement} sourceCanvas 
+   * @param {HTMLCanvasElement} sourceCanvas
    * @returns {Blob} The XTH binary data
    */
   encode(sourceCanvas) {
     // 1. Create a working canvas to avoid modifying the original
-    const canvas = document.createElement('canvas');
+    const canvas = document.createElement("canvas");
     canvas.width = sourceCanvas.width;
     canvas.height = sourceCanvas.height;
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
     ctx.drawImage(sourceCanvas, 0, 0);
 
     // 2. Apply Dithering and 4-level Grayscale
@@ -36,7 +36,7 @@ export class XTHEncoder {
     // 3. Generate XTH Binary Data
     const buffer = this.generateBinaryData(ctx, canvas.width, canvas.height);
 
-    return new Blob([buffer], { type: 'application/octet-stream' });
+    return new Blob([buffer], { type: "application/octet-stream" });
   }
 
   /**
@@ -52,12 +52,15 @@ export class XTHEncoder {
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         const index = (y * width + x) * 4;
-        let gray = (data[index] * 0.299 + data[index + 1] * 0.587 + data[index + 2] * 0.114);
-        
+        let gray =
+          data[index] * 0.299 +
+          data[index + 1] * 0.587 +
+          data[index + 2] * 0.114;
+
         // Add distributed error
         const currentError = errorMatrix[y * width + x];
         let ditheredGray = gray + currentError * strength;
-        
+
         // Clamp
         ditheredGray = Math.max(0, Math.min(255, ditheredGray));
 
@@ -73,14 +76,12 @@ export class XTHEncoder {
 
         // Distribute error (Floyd-Steinberg)
         if (this.settings.enableDithering) {
-          if (x < width - 1) 
-            errorMatrix[y * width + x + 1] += error * 7/16;
+          if (x < width - 1) errorMatrix[y * width + x + 1] += (error * 7) / 16;
           if (y < height - 1) {
-            if (x > 0) 
-              errorMatrix[(y + 1) * width + x - 1] += error * 3/16;
-            errorMatrix[(y + 1) * width + x] += error * 5/16;
-            if (x < width - 1) 
-              errorMatrix[(y + 1) * width + x + 1] += error * 1/16;
+            if (x > 0) errorMatrix[(y + 1) * width + x - 1] += (error * 3) / 16;
+            errorMatrix[(y + 1) * width + x] += (error * 5) / 16;
+            if (x < width - 1)
+              errorMatrix[(y + 1) * width + x + 1] += (error * 1) / 16;
           }
         }
 
@@ -106,7 +107,7 @@ export class XTHEncoder {
   generateBinaryData(ctx, width, height) {
     const imageData = ctx.getImageData(0, 0, width, height);
     const data = imageData.data;
-    
+
     const arrayData1 = [];
     const arrayData2 = [];
 
@@ -123,9 +124,12 @@ export class XTHEncoder {
 
             // Map grayscale back to 2-bit value (0-3)
             let twoBitValue;
-            if (grayValue < this.settings.threshold1) twoBitValue = 0; // Black
-            else if (grayValue < this.settings.threshold2) twoBitValue = 2; // Dark Gray
-            else if (grayValue < this.settings.threshold3) twoBitValue = 1; // Light Gray
+            if (grayValue < this.settings.threshold1)
+              twoBitValue = 0; // Black
+            else if (grayValue < this.settings.threshold2)
+              twoBitValue = 2; // Dark Gray
+            else if (grayValue < this.settings.threshold3)
+              twoBitValue = 1; // Light Gray
             else twoBitValue = 3; // White
 
             // Invert logic for the hardware format? (Copied from Gist: 3 - value)

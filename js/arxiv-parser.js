@@ -24,7 +24,7 @@ export class ArxivParser {
    */
   extractArxivId(url) {
     const match = url.match(this.arxivUrlPattern);
-    return match ? match[1] + (match[2] || '') : null;
+    return match ? match[1] + (match[2] || "") : null;
   }
 
   /**
@@ -35,8 +35,8 @@ export class ArxivParser {
   async fetchPaper(url) {
     try {
       const response = await fetch(url, {
-        mode: 'cors',
-        credentials: 'omit'
+        mode: "cors",
+        credentials: "omit",
       });
 
       if (!response.ok) {
@@ -45,7 +45,7 @@ export class ArxivParser {
 
       const html = await response.text();
       const parser = new DOMParser();
-      return parser.parseFromString(html, 'text/html');
+      return parser.parseFromString(html, "text/html");
     } catch (error) {
       throw new Error(`Failed to fetch Arxiv paper: ${error.message}`);
     }
@@ -57,15 +57,24 @@ export class ArxivParser {
    * @returns {Object} - { title, authors, abstract, arxivId }
    */
   extractMetadata(doc) {
-    const title = doc.querySelector('h1.ltx_title, .ltx_title_document, h1')?.textContent?.trim() || 'Untitled';
+    const title =
+      doc
+        .querySelector("h1.ltx_title, .ltx_title_document, h1")
+        ?.textContent?.trim() || "Untitled";
 
     // Extract authors
-    const authorElements = doc.querySelectorAll('.ltx_author, .ltx_personname, .ltx_authors');
-    const authors = Array.from(authorElements).map(el => el.textContent.trim()).filter(a => a).join(', ') || 'Unknown';
+    const authorElements = doc.querySelectorAll(
+      ".ltx_author, .ltx_personname, .ltx_authors",
+    );
+    const authors =
+      Array.from(authorElements)
+        .map((el) => el.textContent.trim())
+        .filter((a) => a)
+        .join(", ") || "Unknown";
 
     // Extract abstract
-    const abstractEl = doc.querySelector('.ltx_abstract');
-    const abstract = abstractEl ? abstractEl.textContent.trim() : '';
+    const abstractEl = doc.querySelector(".ltx_abstract");
+    const abstract = abstractEl ? abstractEl.textContent.trim() : "";
 
     return { title, authors, abstract };
   }
@@ -77,10 +86,10 @@ export class ArxivParser {
    */
   extractContent(doc) {
     // Try to find main content container
-    let article = doc.querySelector('article, main, .ltx_document, body');
+    let article = doc.querySelector("article, main, .ltx_document, body");
 
     if (!article) {
-      throw new Error('Could not find article content');
+      throw new Error("Could not find article content");
     }
 
     // Clone to avoid modifying original
@@ -88,33 +97,33 @@ export class ArxivParser {
 
     // Remove unwanted elements
     const removeSelectors = [
-      'nav',
-      'header',
-      'footer',
-      '.ltx_navigation',
-      '.ltx_footer',
-      '.ltx_header',
-      '.ltx_page_footer',
-      '.ltx_page_header',
-      '.ltx_TOC',
-      'script',
-      'style',
+      "nav",
+      "header",
+      "footer",
+      ".ltx_navigation",
+      ".ltx_footer",
+      ".ltx_header",
+      ".ltx_page_footer",
+      ".ltx_page_header",
+      ".ltx_TOC",
+      "script",
+      "style",
       '[class*="navigation"]',
-      '[class*="menu"]'
+      '[class*="menu"]',
     ];
 
-    removeSelectors.forEach(selector => {
-      article.querySelectorAll(selector).forEach(el => el.remove());
+    removeSelectors.forEach((selector) => {
+      article.querySelectorAll(selector).forEach((el) => el.remove());
     });
 
     // Remove LaTeXML metadata comments
     const comments = [];
     const walker = document.createTreeWalker(article, NodeFilter.SHOW_COMMENT);
     let comment;
-    while (comment = walker.nextNode()) {
+    while ((comment = walker.nextNode())) {
       comments.push(comment);
     }
-    comments.forEach(c => c.remove());
+    comments.forEach((c) => c.remove());
 
     return article;
   }
@@ -126,7 +135,7 @@ export class ArxivParser {
    */
   async processPaperFromUrl(url) {
     if (!this.isValidArxivUrl(url)) {
-      throw new Error('Invalid Arxiv HTML URL');
+      throw new Error("Invalid Arxiv HTML URL");
     }
 
     const doc = await this.fetchPaper(url);
@@ -136,7 +145,7 @@ export class ArxivParser {
     return {
       metadata,
       content: content.innerHTML,
-      arxivId: this.extractArxivId(url)
+      arxivId: this.extractArxivId(url),
     };
   }
 
@@ -147,7 +156,7 @@ export class ArxivParser {
    */
   processPaperFromHtml(html) {
     const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
+    const doc = parser.parseFromString(html, "text/html");
 
     const metadata = this.extractMetadata(doc);
     const content = this.extractContent(doc);
@@ -155,7 +164,7 @@ export class ArxivParser {
     return {
       metadata,
       content: content.innerHTML,
-      arxivId: null
+      arxivId: null,
     };
   }
 }
