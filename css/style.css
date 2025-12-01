@@ -416,6 +416,58 @@ body {
   position: relative;
 }
 
+/* Calibration control */
+.calibration-control {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.calibration-control input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: var(--base1);
+  border-radius: 2px;
+  outline: none;
+}
+
+.calibration-control input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  background: var(--blue);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.calibration-control input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  background: var(--blue);
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+}
+
+/* Actual size preview - shows image at true physical device size (measured: 5.5cm × 9cm) */
+.preview-viewport.actual-size {
+  width: 5.5cm;
+  height: 9cm;
+  overflow: auto;
+  transform-origin: top center;
+}
+
+.preview-viewport.actual-size img {
+  width: 5.5cm;
+  height: 9cm;
+  object-fit: contain;
+  display: block;
+}
+
 .preview-placeholder {
   display: flex;
   align-items: center;

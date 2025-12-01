@@ -36,6 +36,7 @@ class EPUBConverterApp {
     this.attachEventListeners();
     this.initializeCollapsibleSections();
     this.preloadFonts();
+    this.loadCalibrationScale();
   }
 
   initializeUI() {
@@ -80,6 +81,9 @@ class EPUBConverterApp {
       prevPageBtn: document.getElementById("prev-page-btn"),
       nextPageBtn: document.getElementById("next-page-btn"),
       nextChapterBtn: document.getElementById("next-chapter-btn"),
+      sizeCalibration: document.getElementById("size-calibration"),
+      sizeCalibrationValue: document.getElementById("size-calibration-value"),
+      actualSizeViewport: document.getElementById("actual-size-viewport"),
     };
 
     // Initialize output format UI
@@ -129,6 +133,12 @@ class EPUBConverterApp {
     this.elements.prevPageBtn.addEventListener("click", () => this.goToPrevPage());
     this.elements.nextPageBtn.addEventListener("click", () => this.goToNextPage());
     this.elements.nextChapterBtn.addEventListener("click", () => this.goToNextChapter());
+    this.elements.sizeCalibration.addEventListener("input", (e) => {
+      const scale = e.target.value / 100;
+      this.elements.sizeCalibrationValue.textContent = e.target.value;
+      this.elements.actualSizeViewport.style.transform = `scale(${scale})`;
+      this.saveCalibrationScale(parseInt(e.target.value));
+    });
     this.elements.convertBtn.addEventListener("click", () => this.startConversion());
   }
 
@@ -347,8 +357,12 @@ class EPUBConverterApp {
   }
 
   async updateImagePreview() {
-    const previewContainer = document.querySelector(".preview-viewport");
-    previewContainer.innerHTML = '<div class="preview-placeholder"><p>Rendering...</p></div>';
+    const scaledPreview = document.querySelector("#preview-viewport");
+    const actualSizePreview = document.querySelector("#actual-size-viewport");
+
+    scaledPreview.innerHTML = '<div class="preview-placeholder"><p>Rendering...</p></div>';
+    actualSizePreview.innerHTML = '<div class="preview-placeholder"><p>Rendering...</p></div>';
+
     try {
       const pageElement = this.paginator.getCurrentPageElement();
       const settings = {
@@ -359,11 +373,18 @@ class EPUBConverterApp {
       };
       const blob = await this.renderer.renderPageToImage(pageElement, settings.fontFamily, settings);
       const imageUrl = URL.createObjectURL(blob);
-      previewContainer.innerHTML = `<img src="${imageUrl}" style="width: 100%; height: 100%; object-fit: contain;" />`;
+
+      // Update scaled preview (fits to viewport)
+      scaledPreview.innerHTML = `<img src="${imageUrl}" style="width: 100%; height: 100%; object-fit: contain;" />`;
+
+      // Update actual-size preview (shows at real 480×800 pixels)
+      actualSizePreview.innerHTML = `<img src="${imageUrl}" />`;
+
       setTimeout(() => URL.revokeObjectURL(imageUrl), 1000);
     } catch (error) {
       console.error("Error updating preview:", error);
-      previewContainer.innerHTML = '<div class="preview-placeholder"><p>Preview error</p></div>';
+      scaledPreview.innerHTML = '<div class="preview-placeholder"><p>Preview error</p></div>';
+      actualSizePreview.innerHTML = '<div class="preview-placeholder"><p>Preview error</p></div>';
     }
   }
 
@@ -428,6 +449,25 @@ class EPUBConverterApp {
       }
     } catch (error) {
       console.warn("Failed to save settings:", error);
+    }
+  }
+
+  async loadCalibrationScale() {
+    try {
+      const scale = await this.settingsStorage.getCalibrationScale();
+      this.elements.sizeCalibration.value = scale;
+      this.elements.sizeCalibrationValue.textContent = scale;
+      this.elements.actualSizeViewport.style.transform = `scale(${scale / 100})`;
+    } catch (error) {
+      console.warn("Failed to load calibration scale:", error);
+    }
+  }
+
+  async saveCalibrationScale(scale) {
+    try {
+      await this.settingsStorage.saveCalibrationScale(scale);
+    } catch (error) {
+      console.warn("Failed to save calibration scale:", error);
     }
   }
 

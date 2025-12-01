@@ -8,6 +8,7 @@ import { get, set } from './lib/idb-keyval.js';
 export class SettingsStorage {
   constructor() {
     this.GLOBAL_SETTINGS_KEY = '2x4:global-settings';
+    this.CALIBRATION_KEY = '2x4:display-calibration';
   }
 
   /**
@@ -71,5 +72,22 @@ export class SettingsStorage {
     };
 
     await set(this.GLOBAL_SETTINGS_KEY, settingsToSave);
+  }
+
+  /**
+   * Get display calibration scale
+   * @returns {Promise<number>} Scale percentage (default: 100)
+   */
+  async getCalibrationScale() {
+    const scale = await get(this.CALIBRATION_KEY);
+    return scale || 100;
+  }
+
+  /**
+   * Save display calibration scale
+   * @param {number} scale - Scale percentage (e.g., 100, 115, 120)
+   */
+  async saveCalibrationScale(scale) {
+    await set(this.CALIBRATION_KEY, scale);
   }
 }

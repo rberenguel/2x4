@@ -262,6 +262,28 @@ h1 { margin-top: 2em; }"
 
         <div class="preview-container">
           <div class="preview-column">
+            <h3 class="preview-title">Actual Screen Size (5.5cm × 9cm)</h3>
+            <div class="calibration-control">
+              <label for="size-calibration" style="font-size: 0.75rem; color: var(--base01);">
+                Scale: <span id="size-calibration-value">100</span>%
+              </label>
+              <input
+                type="range"
+                id="size-calibration"
+                min="80"
+                max="140"
+                value="100"
+                step="1"
+                style="width: 150px;"
+              />
+            </div>
+            <div id="actual-size-viewport" class="preview-viewport actual-size">
+              <div class="preview-placeholder">
+                <p>Actual device size</p>
+              </div>
+            </div>
+          </div>
+          <div class="preview-column">
             <h3 class="preview-title">Image Preview</h3>
             <div id="preview-viewport" class="preview-viewport">
               <div class="preview-placeholder">
@@ -270,9 +292,7 @@ h1 { margin-top: 2em; }"
             </div>
           </div>
           <div class="preview-column">
-            <h3 class="preview-title">
-              HTML Preview
-            </h3>
+            <h3 class="preview-title">HTML Preview</h3>
             <div id="html-preview-viewport" class="preview-viewport">
               <div class="preview-placeholder">
                 <p>HTML preview</p>
