@@ -82,6 +82,42 @@ body {
   font-weight: 600;
 }
 
+/* Collapsible sections */
+.settings-section h2.collapsible {
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  user-select: none;
+  padding: 0.25rem 0;
+  transition: color 0.2s;
+}
+
+.settings-section h2.collapsible:hover {
+  color: var(--base02);
+}
+
+.collapse-icon {
+  font-size: 0.75rem;
+  transition: transform 0.2s;
+}
+
+.settings-section.collapsed .collapse-icon {
+  transform: rotate(-90deg);
+}
+
+.section-content {
+  max-height: 2000px;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+  opacity: 1;
+}
+
+.settings-section.collapsed .section-content {
+  max-height: 0;
+  opacity: 0;
+}
+
 /* File Upload */
 .file-upload-label {
   display: flex;

@@ -10,22 +10,31 @@ import { FontEmbedder } from "./font-embed.js";
 import { Paginator } from "./paginator.js";
 import { Renderer } from "./renderer.js";
 import { EPUBBuilder } from "./epub-builder.js";
+import { ArxivParser } from "./arxiv-parser.js";
+import { SettingsStorage } from "./settings-storage.js";
 
 class EPUBConverterApp {
   constructor() {
     this.parser = new EPUBParser();
+    this.arxivParser = new ArxivParser();
     this.fontEmbedder = new FontEmbedder();
     this.paginator = new Paginator("#virtual-device");
     this.renderer = new Renderer(this.fontEmbedder);
     this.epubBuilder = new EPUBBuilder();
     this.xthEncoder = new XTHEncoder();
     this.xtcBuilder = new XTCBuilder();
+    this.settingsStorage = new SettingsStorage();
 
     this.epubLoaded = false;
     this.isConverting = false;
+    this.currentMode = 'epub'; // 'epub' or 'arxiv'
+    this.arxivChapters = []; // For multi-section Arxiv papers
+    this.currentFilename = null; // For persistent settings
+    this.settingsDebounceTimer = null; // For debouncing font settings updates
 
     this.initializeUI();
     this.attachEventListeners();
+    this.initializeCollapsibleSections();
     this.preloadFonts();
   }
 
@@ -48,6 +57,15 @@ class EPUBConverterApp {
       xtcSplitValue: document.getElementById("xtc-split-value"),
       xtcFilenameSettings: document.getElementById("xtc-filename-settings"),
       xtcFilenamePattern: document.getElementById("xtc-filename-pattern"),
+      modeEpub: document.getElementById("mode-epub"),
+      modeArxiv: document.getElementById("mode-arxiv"),
+      epubModeSections: document.getElementById("epub-mode-sections"),
+      arxivModeSections: document.getElementById("arxiv-mode-sections"),
+      arxivUrl: document.getElementById("arxiv-url"),
+      loadArxivBtn: document.getElementById("load-arxiv-btn"),
+      arxivHtmlPaste: document.getElementById("arxiv-html-paste"),
+      loadArxivPasteBtn: document.getElementById("load-arxiv-paste-btn"),
+      arxivInfo: document.getElementById("arxiv-info"),
       limitType: document.getElementById("limit-type"),
       limitValue: document.getElementById("limit-value"),
       limitValueDisplay: document.getElementById("limit-value-display"),
@@ -69,15 +87,22 @@ class EPUBConverterApp {
   }
 
   attachEventListeners() {
+    this.elements.modeEpub.addEventListener("change", () => this.switchMode('epub'));
+    this.elements.modeArxiv.addEventListener("change", () => this.switchMode('arxiv'));
     this.elements.epubUpload.addEventListener("change", (e) => this.handleFileUpload(e));
-    this.elements.fontFamily.addEventListener("change", () => this.updatePaginatorSettings());
+    this.elements.loadArxivBtn.addEventListener("click", () => this.loadArxivFromUrl());
+    this.elements.loadArxivPasteBtn.addEventListener("click", () => this.loadArxivFromPaste());
+    this.elements.fontFamily.addEventListener("change", () => {
+      this.updatePaginatorSettings();
+      this.saveCurrentSettings();
+    });
     this.elements.fontSize.addEventListener("input", (e) => {
       this.elements.fontSizeValue.textContent = e.target.value;
-      this.updatePaginatorSettings();
+      this.debouncedUpdatePaginatorSettings();
     });
     this.elements.lineHeight.addEventListener("input", (e) => {
       this.elements.lineHeightValue.textContent = e.target.value;
-      this.updatePaginatorSettings();
+      this.debouncedUpdatePaginatorSettings();
     });
     this.elements.jpegQuality.addEventListener("input", (e) => {
       this.elements.jpegQualityValue.textContent = e.target.value;
@@ -92,7 +117,7 @@ class EPUBConverterApp {
       const limitType = e.target.value;
       this.elements.limitValueGroup.style.display = limitType === "none" ? "none" : "block";
       if (limitType === "chapters" && this.epubLoaded) {
-        this.elements.limitValue.max = this.parser.spine.length;
+        this.elements.limitValue.max = this.getTotalChapters();
       } else if (limitType === "pages") {
         this.elements.limitValue.max = 100;
       }
@@ -107,10 +132,148 @@ class EPUBConverterApp {
     this.elements.convertBtn.addEventListener("click", () => this.startConversion());
   }
 
+  initializeCollapsibleSections() {
+    // Find all collapsible section headers
+    const collapsibleHeaders = document.querySelectorAll('.settings-section h2.collapsible');
+
+    collapsibleHeaders.forEach(header => {
+      header.addEventListener('click', () => {
+        const section = header.parentElement;
+        section.classList.toggle('collapsed');
+      });
+    });
+  }
+
   updateOutputFormatUI() {
     const format = this.elements.outputFormat.value;
     this.elements.xtcSplitSettings.style.display = (format === 'xtc') ? 'block' : 'none';
     this.elements.xtcFilenameSettings.style.display = (format === 'xtc') ? 'block' : 'none';
+  }
+
+  switchMode(mode) {
+    this.currentMode = mode;
+
+    if (mode === 'epub') {
+      this.elements.epubModeSections.style.display = 'block';
+      this.elements.arxivModeSections.style.display = 'none';
+    } else {
+      this.elements.epubModeSections.style.display = 'none';
+      this.elements.arxivModeSections.style.display = 'block';
+    }
+
+    // Reset state
+    this.epubLoaded = false;
+    this.arxivChapters = [];
+    this.elements.convertBtn.disabled = true;
+  }
+
+  async loadArxivFromUrl() {
+    const url = this.elements.arxivUrl.value.trim();
+
+    if (!url) {
+      this.elements.arxivInfo.textContent = "Please enter an Arxiv URL";
+      this.elements.arxivInfo.classList.remove("hidden");
+      this.elements.arxivInfo.style.color = "#dc322f";
+      return;
+    }
+
+    try {
+      this.elements.arxivInfo.textContent = "Loading paper...";
+      this.elements.arxivInfo.classList.remove("hidden");
+      this.elements.arxivInfo.style.color = "";
+
+      const paper = await this.arxivParser.processPaperFromUrl(url);
+
+      await this.loadArxivPaper(paper);
+
+    } catch (error) {
+      console.error("Error loading Arxiv paper:", error);
+      this.elements.arxivInfo.textContent = `Error: ${error.message}. Try paste method instead.`;
+      this.elements.arxivInfo.style.color = "#dc322f";
+    }
+  }
+
+  async loadArxivFromPaste() {
+    const html = this.elements.arxivHtmlPaste.value.trim();
+
+    if (!html) {
+      this.elements.arxivInfo.textContent = "Please paste HTML source";
+      this.elements.arxivInfo.classList.remove("hidden");
+      this.elements.arxivInfo.style.color = "#dc322f";
+      return;
+    }
+
+    try {
+      this.elements.arxivInfo.textContent = "Processing pasted HTML...";
+      this.elements.arxivInfo.classList.remove("hidden");
+      this.elements.arxivInfo.style.color = "";
+
+      const paper = this.arxivParser.processPaperFromHtml(html);
+
+      await this.loadArxivPaper(paper);
+
+      // Clear textarea to free memory
+      this.elements.arxivHtmlPaste.value = '';
+
+    } catch (error) {
+      console.error("Error processing pasted HTML:", error);
+      this.elements.arxivInfo.textContent = `Error: ${error.message}`;
+      this.elements.arxivInfo.style.color = "#dc322f";
+    }
+  }
+
+  async loadArxivPaper(paper) {
+    // Wrap content with e-ink styles
+    const styledContent = `
+      <div class="arxiv-content">
+        <h1>${paper.metadata.title}</h1>
+        <p style="font-style: italic; margin: 1em 0;">${paper.metadata.authors}</p>
+        ${paper.content}
+      </div>
+    `;
+
+    // Store as single chapter for conversion
+    this.arxivChapters = [styledContent];
+
+    // Update metadata for export
+    // Use arxiv ID as title for filename if available, otherwise use paper title
+    const exportTitle = paper.arxivId || paper.metadata.title;
+    this.parser.metadata = {
+      title: exportTitle,
+      creator: paper.metadata.authors,
+      language: "en"
+    };
+
+    // Pre-populate filename pattern with arxiv ID if available
+    if (paper.arxivId) {
+      this.elements.xtcFilenamePattern.value = paper.arxivId;
+    }
+
+    this.epubLoaded = true; // Mark as loaded so updatePaginatorSettings works
+
+    // Load saved settings for this arxiv paper (use arxiv ID as identifier)
+    this.currentFilename = paper.arxivId || paper.metadata.title;
+    await this.loadSavedSettings(this.currentFilename);
+
+    // Apply current typography settings before loading
+    const settings = {
+      fontFamily: this.elements.fontFamily.value,
+      fontSize: parseInt(this.elements.fontSize.value),
+      lineHeight: parseFloat(this.elements.lineHeight.value),
+      customCSS: this.elements.customCSS.value,
+    };
+    this.paginator.updateSettings(settings);
+
+    // Load into paginator with current settings applied
+    await this.paginator.loadChapter(styledContent, 0);
+    this.updateChapterInfo(0, this.paginator.getPageInfo().totalPages);
+    this.updateNavigationButtons();
+
+    this.elements.arxivInfo.textContent = `Loaded: ${paper.metadata.title}`;
+    this.elements.arxivInfo.style.color = "";
+    this.elements.convertBtn.disabled = false;
+
+    await this.updateImagePreview();
   }
 
   async preloadFonts() {
@@ -132,6 +295,11 @@ class EPUBConverterApp {
       this.elements.fileInfo.textContent = `Loaded: ${info.metadata.title} by ${info.metadata.creator} (${info.chapterCount} chapters)`;
       this.elements.convertBtn.disabled = false;
       this.epubLoaded = true;
+
+      // Load saved settings for this file
+      this.currentFilename = file.name;
+      await this.loadSavedSettings(file.name);
+
       await this.loadChapter(0);
     } catch (error) {
       console.error("Error loading EPUB:", error);
@@ -142,8 +310,13 @@ class EPUBConverterApp {
 
   async loadChapter(index) {
     try {
-      if (index < 0 || index >= this.parser.spine.length) return;
-      const html = await this.parser.getChapterContent(index);
+      if (index < 0 || index >= this.getTotalChapters()) return;
+
+      // Get chapter content based on mode
+      const html = this.currentMode === 'arxiv'
+        ? this.arxivChapters[index]
+        : await this.parser.getChapterContent(index);
+
       const pageCount = await this.paginator.loadChapter(html, index);
       this.updateChapterInfo(index, pageCount);
       this.updateNavigationButtons();
@@ -155,10 +328,14 @@ class EPUBConverterApp {
   }
 
   updateChapterInfo(chapterIndex, pageCount) {
-    const title = this.parser.getChapterTitle(chapterIndex);
+    // Get chapter title based on mode
+    const title = this.currentMode === 'arxiv'
+      ? (chapterIndex === 0 ? this.parser.metadata.title : `Section ${chapterIndex + 1}`)
+      : this.parser.getChapterTitle(chapterIndex);
+
     this.elements.chapterTitle.textContent = title;
     const pageInfo = this.paginator.getPageInfo();
-    this.elements.pageInfo.textContent = `Page ${pageInfo.currentPage}/${pageInfo.totalPages} • Chapter ${pageInfo.currentChapter}/${this.parser.spine.length}`;
+    this.elements.pageInfo.textContent = `Page ${pageInfo.currentPage}/${pageInfo.totalPages} • Chapter ${pageInfo.currentChapter}/${this.getTotalChapters()}`;
   }
 
   updateNavigationButtons() {
@@ -166,7 +343,7 @@ class EPUBConverterApp {
     this.elements.prevPageBtn.disabled = !pageInfo.hasPrevPage;
     this.elements.nextPageBtn.disabled = !pageInfo.hasNextPage;
     this.elements.prevChapterBtn.disabled = pageInfo.currentChapter <= 1;
-    this.elements.nextChapterBtn.disabled = pageInfo.currentChapter >= this.parser.spine.length;
+    this.elements.nextChapterBtn.disabled = pageInfo.currentChapter >= this.getTotalChapters();
   }
 
   async updateImagePreview() {
@@ -190,6 +367,18 @@ class EPUBConverterApp {
     }
   }
 
+  debouncedUpdatePaginatorSettings() {
+    // Clear existing timer
+    if (this.settingsDebounceTimer) {
+      clearTimeout(this.settingsDebounceTimer);
+    }
+
+    // Set new timer - wait 300ms after last input before updating
+    this.settingsDebounceTimer = setTimeout(() => {
+      this.updatePaginatorSettings();
+    }, 300);
+  }
+
   async updatePaginatorSettings() {
     if (!this.epubLoaded) return;
     const settings = {
@@ -200,12 +389,56 @@ class EPUBConverterApp {
     };
     this.paginator.updateSettings(settings);
     await this.loadChapter(this.paginator.currentChapterIndex);
+
+    // Save settings after update completes
+    await this.saveCurrentSettings();
+  }
+
+  async loadSavedSettings(filename) {
+    try {
+      const savedSettings = await this.settingsStorage.getSettingsForFile(filename);
+
+      if (savedSettings) {
+        // Apply to UI controls
+        this.elements.fontFamily.value = savedSettings.fontFamily;
+        this.elements.fontSize.value = savedSettings.fontSize;
+        this.elements.fontSizeValue.textContent = savedSettings.fontSize;
+        this.elements.lineHeight.value = savedSettings.lineHeight;
+        this.elements.lineHeightValue.textContent = savedSettings.lineHeight;
+      }
+    } catch (error) {
+      console.warn("Failed to load saved settings:", error);
+    }
+  }
+
+  async saveCurrentSettings() {
+    const settings = {
+      fontFamily: this.elements.fontFamily.value,
+      fontSize: parseInt(this.elements.fontSize.value),
+      lineHeight: parseFloat(this.elements.lineHeight.value)
+    };
+
+    try {
+      if (this.currentFilename && this.epubLoaded) {
+        // Save for specific file
+        await this.settingsStorage.saveSettingsForFile(this.currentFilename, settings);
+      } else {
+        // Save as global defaults
+        await this.settingsStorage.saveGlobalSettings(settings);
+      }
+    } catch (error) {
+      console.warn("Failed to save settings:", error);
+    }
+  }
+
+  getTotalChapters() {
+    return this.currentMode === 'arxiv' ? this.arxivChapters.length : this.parser.spine.length;
   }
 
   async goToPrevPage() {
     if (this.paginator.prevPage()) {
       const pageInfo = this.paginator.getPageInfo();
-      this.elements.pageInfo.textContent = `Page ${pageInfo.currentPage}/${pageInfo.totalPages} • Chapter ${pageInfo.currentChapter}/${this.parser.spine.length}`;
+      this.elements.pageInfo.textContent = `Page ${pageInfo.currentPage}/${pageInfo.totalPages} • Chapter ${pageInfo.currentChapter}/${this.getTotalChapters()}`;
       this.updateNavigationButtons();
       await this.updateImagePreview();
     }
@@ -214,7 +447,7 @@ class EPUBConverterApp {
   async goToNextPage() {
     if (this.paginator.nextPage()) {
       const pageInfo = this.paginator.getPageInfo();
-      this.elements.pageInfo.textContent = `Page ${pageInfo.currentPage}/${pageInfo.totalPages} • Chapter ${pageInfo.currentChapter}/${this.parser.spine.length}`;
+      this.elements.pageInfo.textContent = `Page ${pageInfo.currentPage}/${pageInfo.totalPages} • Chapter ${pageInfo.currentChapter}/${this.getTotalChapters()}`;
       this.updateNavigationButtons();
       await this.updateImagePreview();
     }
@@ -227,7 +460,7 @@ class EPUBConverterApp {
 
   async goToNextChapter() {
     const newIndex = this.paginator.currentChapterIndex + 1;
-    if (newIndex < this.parser.spine.length) await this.loadChapter(newIndex);
+    if (newIndex < this.getTotalChapters()) await this.loadChapter(newIndex);
   }
 
   /**
@@ -274,7 +507,9 @@ class EPUBConverterApp {
       const limitType = this.elements.limitType.value;
       const limitValue = parseInt(this.elements.limitValue.value);
       let globalPageNumber = 1;
-      let totalChapters = this.parser.spine.length;
+
+      // Use different chapter sources based on mode
+      const totalChapters = this.currentMode === 'arxiv' ? this.arxivChapters.length : this.parser.spine.length;
       let maxPages = Infinity;
 
       if (limitType === "chapters") totalChapters = Math.min(limitValue, totalChapters);
@@ -299,13 +534,20 @@ class EPUBConverterApp {
         if (globalPageNumber > maxPages) break;
         this.updateProgress(`Loading chapter ${chapterIndex + 1}/${totalChapters}...`, 0);
 
-        const html = await this.parser.getChapterContent(chapterIndex);
+        // Get chapter content based on mode
+        const html = this.currentMode === 'arxiv'
+          ? this.arxivChapters[chapterIndex]
+          : await this.parser.getChapterContent(chapterIndex);
+
         await this.paginator.loadChapter(html, chapterIndex);
         const pageCount = this.paginator.pageCount;
 
         // Add chapter marker for XTC format (0-indexed page number)
         if (outputFormat === "xtc") {
-          const chapterTitle = this.parser.getChapterTitle(chapterIndex);
+          const chapterTitle = this.currentMode === 'arxiv'
+            ? (chapterIndex === 0 ? this.parser.metadata.title : `Section ${chapterIndex + 1}`)
+            : this.parser.getChapterTitle(chapterIndex);
+
           if (currentVolume) {
             currentVolume.builder.addChapter(chapterTitle, pagesInCurrentVolume);
           } else {
@@ -466,9 +708,18 @@ class EPUBConverterApp {
 
           const customPattern = this.elements.xtcFilenamePattern.value.trim();
           const baseTitle = customPattern ? this.sanitizeFilename(customPattern) : this.sanitizeFilename(this.parser.metadata.title);
-          const startPage = String(currentVolume.startPage).padStart(4, "0");
-          const endPage = String(currentVolume.startPage + currentVolume.pagesInVolume - 1).padStart(4, "0");
-          filename = `${startPage}-${baseTitle}-${endPage}.xtc`;
+
+          // Only use page numbers if this is truly a multi-volume book
+          // (i.e., we already have other volumes, or this volume is split)
+          if (xtcVolumes.length > 0) {
+            // Multiple volumes - use page numbers
+            const startPage = String(currentVolume.startPage).padStart(4, "0");
+            const endPage = String(currentVolume.startPage + currentVolume.pagesInVolume - 1).padStart(4, "0");
+            filename = `${startPage}-${baseTitle}-${endPage}.xtc`;
+          } else {
+            // Single volume - omit page numbers
+            filename = `${baseTitle}.xtc`;
+          }
 
           xtcVolumes.push(currentVolume);
         } else {

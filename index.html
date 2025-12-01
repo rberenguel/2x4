@@ -3,9 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>EPUB to Image Converter</title>
+    <title>2X4</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
     <link rel="stylesheet" href="css/style.css" />
     <link rel="stylesheet" href="css/reader.css" />
+    <link rel="stylesheet" href="css/arxiv.css" />
     <link rel="manifest" href="manifest.json" />
   </head>
   <body>
@@ -13,10 +15,25 @@
       <!-- Left Panel: Settings -->
       <aside class="settings-panel">
         <header>
-          <h1>EPUB to Images</h1>
-          <p class="subtitle">Convert for Xteink X4 (480×800)</p>
+          <h1>2X4</h1>
+          <p class="subtitle">to x4 (480×800)</p>
         </header>
 
+        <div class="settings-section">
+          <div style="display: flex; gap: 1rem; margin-bottom: 0;">
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+              <input type="radio" id="mode-epub" name="mode" value="epub" checked />
+              <span>EPUB</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+              <input type="radio" id="mode-arxiv" name="mode" value="arxiv" />
+              <span>Arxiv</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- EPUB Mode Sections -->
+        <div id="epub-mode-sections">
         <div class="settings-section">
           <label for="epub-upload" class="file-upload-label">
             <span class="upload-icon">📖</span>
@@ -25,10 +42,50 @@
           </label>
           <div id="file-info" class="file-info hidden"></div>
         </div>
+        </div>
+        <!-- End EPUB Mode Sections -->
 
+        <!-- Arxiv Mode Sections -->
+        <div id="arxiv-mode-sections" style="display: none;">
         <div class="settings-section">
-          <h2>Typography</h2>
+          <h2>Load Arxiv Paper</h2>
 
+          <div class="control-group">
+            <label for="arxiv-url">Arxiv HTML URL</label>
+            <input
+              type="text"
+              id="arxiv-url"
+              placeholder="https://arxiv.org/html/2511.15304v2"
+              style="width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; font-family: monospace; font-size: 0.9rem;"
+            />
+            <button id="load-arxiv-btn" class="apply-css-btn" style="margin-top: 0.5rem;">
+              Load from URL
+            </button>
+          </div>
+
+          <div style="margin: 1rem 0; text-align: center; color: #888;">— OR —</div>
+
+          <div class="control-group">
+            <label for="arxiv-html-paste">Paste HTML Source (from View Source)</label>
+            <textarea
+              id="arxiv-html-paste"
+              placeholder="Paste full HTML source here (Ctrl+U / Cmd+Option+U → Select All → Copy)"
+              style="width: 100%; min-height: 150px; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; font-family: monospace; font-size: 0.85rem; resize: vertical;"
+            ></textarea>
+            <button id="load-arxiv-paste-btn" class="apply-css-btn" style="margin-top: 0.5rem;">
+              Load from HTML
+            </button>
+          </div>
+
+          <div id="arxiv-info" class="file-info hidden"></div>
+        </div>
+        </div>
+        <!-- End Arxiv Mode Sections -->
+
+        <!-- Shared Settings (work for both EPUB and Arxiv modes) -->
+        <div class="settings-section collapsed">
+          <h2 class="collapsible">Typography <span class="collapse-icon">▼</span></h2>
+          <div class="section-content">
           <div class="control-group">
             <label for="font-family">Font Family</label>
             <select id="font-family">
@@ -66,11 +123,12 @@
               step="0.1"
             />
           </div>
+          </div>
         </div>
 
-        <div class="settings-section">
-          <h2>Image Quality</h2>
-
+        <div class="settings-section collapsed">
+          <h2 class="collapsible">Image Quality <span class="collapse-icon">▼</span></h2>
+          <div class="section-content">
           <div class="control-group">
             <label for="jpeg-quality"
               >JPEG Quality: <span id="jpeg-quality-value">85</span>%</label
@@ -84,10 +142,12 @@
               step="5"
             />
           </div>
+          </div>
         </div>
 
-        <div class="settings-section">
-          <h2>Output Format</h2>
+        <div class="settings-section collapsed">
+          <h2 class="collapsible">Output Format <span class="collapse-icon">▼</span></h2>
+          <div class="section-content">
 
           <div class="control-group">
             <label for="output-format">Format</label>
@@ -129,10 +189,12 @@
               Files will be named: 0001-pattern-0100.xtc
             </small>
           </div>
+          </div>
         </div>
 
-        <div class="settings-section">
-          <h2>Export Limits (Testing)</h2>
+        <div class="settings-section collapsed">
+          <h2 class="collapsible">Export Limits (Testing) <span class="collapse-icon">▼</span></h2>
+          <div class="section-content">
 
           <div class="control-group">
             <label for="limit-type">Limit by</label>
@@ -160,10 +222,12 @@
               step="1"
             />
           </div>
+          </div>
         </div>
 
-        <div class="settings-section">
-          <h2>Custom CSS</h2>
+        <div class="settings-section collapsed">
+          <h2 class="collapsible">Custom CSS <span class="collapse-icon">▼</span></h2>
+          <div class="section-content">
           <textarea
             id="custom-css"
             placeholder="/* Add custom styles for book content */
@@ -171,6 +235,7 @@ p { margin-bottom: 1em; }
 h1 { margin-top: 2em; }"
           ></textarea>
           <button id="apply-css-btn" class="apply-css-btn">Apply CSS</button>
+          </div>
         </div>
 
         <div class="settings-section">
@@ -205,8 +270,8 @@ h1 { margin-top: 2em; }"
             </div>
           </div>
           <div class="preview-column">
-            <h3 class="preview-title preview-title-wip">
-              HTML Preview <span class="wip-badge">(WIP, broken)</span>
+            <h3 class="preview-title">
+              HTML Preview
             </h3>
             <div id="html-preview-viewport" class="preview-viewport">
               <div class="preview-placeholder">
