@@ -12,6 +12,8 @@ import { Renderer } from "./renderer.js";
 import { EPUBBuilder } from "./epub-builder.js";
 import { ArxivParser } from "./arxiv-parser.js";
 import { SettingsStorage } from "./settings-storage.js";
+import { HTMLExtractor } from "./html-extractor.js";
+import { TranslationManager } from "./translation-manager.js";
 
 class EPUBConverterApp {
   constructor() {
@@ -24,6 +26,8 @@ class EPUBConverterApp {
     this.xthEncoder = new XTHEncoder();
     this.xtcBuilder = new XTCBuilder();
     this.settingsStorage = new SettingsStorage();
+    this.htmlExtractor = new HTMLExtractor();
+    this.translationManager = new TranslationManager();
 
     this.epubLoaded = false;
     this.isConverting = false;
@@ -31,6 +35,12 @@ class EPUBConverterApp {
     this.arxivChapters = []; // For multi-section Arxiv papers
     this.currentFilename = null; // For persistent settings
     this.settingsDebounceTimer = null; // For debouncing font settings updates
+    this.originalMap = null; // Map<pageNumber, originalHTML> - edited original for matching
+    this.translationMap = null; // Map<pageNumber, translatedHTML>
+    this.exportMode = "normal"; // 'normal' | 'text-for-translation'
+    this.currentImportedPageIndex = 0; // Index in the sorted page numbers array
+    this.importedPageNumbers = []; // Sorted array of page numbers
+    this.lastShownWasOriginal = true; // Track whether we're showing original or translation
 
     this.initializeUI();
     this.attachEventListeners();
@@ -85,6 +95,15 @@ class EPUBConverterApp {
       sizeCalibration: document.getElementById("size-calibration"),
       sizeCalibrationValue: document.getElementById("size-calibration-value"),
       actualSizeViewport: document.getElementById("actual-size-viewport"),
+      enableTranslation: document.getElementById("enable-translation"),
+      exportForTranslationBtn: document.getElementById("export-for-translation-btn"),
+      importOriginalBtn: document.getElementById("import-original-btn"),
+      originalFileUpload: document.getElementById("original-file-upload"),
+      originalImportStatus: document.getElementById("original-import-status"),
+      importTranslationBtn: document.getElementById("import-translation-btn"),
+      translationFileUpload: document.getElementById("translation-file-upload"),
+      translationImportStatus: document.getElementById("translation-import-status"),
+      translationTargetLang: document.getElementById("translation-target-lang"),
     };
 
     // Initialize output format UI
@@ -163,6 +182,21 @@ class EPUBConverterApp {
       this.elements.actualSizeViewport.style.transform = `scale(${scale})`;
       this.saveCalibrationScale(parseInt(e.target.value));
     });
+    this.elements.exportForTranslationBtn.addEventListener("click", () =>
+      this.exportForTranslation(),
+    );
+    this.elements.importOriginalBtn.addEventListener("click", () =>
+      this.elements.originalFileUpload.click(),
+    );
+    this.elements.originalFileUpload.addEventListener("change", (e) =>
+      this.handleOriginalImport(e),
+    );
+    this.elements.importTranslationBtn.addEventListener("click", () =>
+      this.elements.translationFileUpload.click(),
+    );
+    this.elements.translationFileUpload.addEventListener("change", (e) =>
+      this.handleTranslationImport(e),
+    );
     this.elements.convertBtn.addEventListener("click", () =>
       this.startConversion(),
     );
@@ -381,7 +415,9 @@ class EPUBConverterApp {
 
       // Get chapter content based on mode
       const html =
-        this.currentMode === "arxiv"
+        this.currentMode === "imported"
+          ? this.importedChapters[index]
+          : this.currentMode === "arxiv"
           ? this.arxivChapters[index]
           : await this.parser.getChapterContent(index);
 
@@ -472,17 +508,21 @@ class EPUBConverterApp {
 
   async updatePaginatorSettings() {
     if (!this.epubLoaded) return;
+
     const settings = {
       fontFamily: this.elements.fontFamily.value,
       fontSize: parseInt(this.elements.fontSize.value),
       lineHeight: parseFloat(this.elements.lineHeight.value),
       customCSS: this.elements.customCSS.value,
     };
+
     this.paginator.updateSettings(settings);
     await this.loadChapter(this.paginator.currentChapterIndex);
 
-    // Save settings after update completes
-    await this.saveCurrentSettings();
+    // Save settings after update completes (skip for imported mode)
+    if (this.currentMode !== "imported") {
+      await this.saveCurrentSettings();
+    }
   }
 
   async loadSavedSettings(filename) {
@@ -546,9 +586,380 @@ class EPUBConverterApp {
   }
 
   getTotalChapters() {
+    if (this.currentMode === "imported") return this.importedChapters?.length || 0;
     return this.currentMode === "arxiv"
       ? this.arxivChapters.length
       : this.parser.spine.length;
+  }
+
+  /**
+   * Get chapter title based on mode
+   * @param {number} chapterIndex
+   * @returns {string}
+   */
+  getChapterTitle(chapterIndex) {
+    return this.currentMode === "arxiv"
+      ? chapterIndex === 0
+        ? this.parser.metadata.title
+        : `Section ${chapterIndex + 1}`
+      : this.parser.getChapterTitle(chapterIndex);
+  }
+
+  /**
+   * Export pages as text for translation
+   */
+  async exportForTranslation() {
+    this.exportMode = "text-for-translation";
+    await this.startConversion();
+    this.exportMode = "normal";
+  }
+
+  /**
+   * Handle original file import (edited original for matching with translation)
+   * @param {Event} event - File input change event
+   */
+  async handleOriginalImport(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+
+      // Validate basic structure
+      if (!text.includes('BILINGUAL TRANSLATION FILE')) {
+        throw new Error('Invalid file format - missing header');
+      }
+
+      if (!text.includes('=== PAGE')) {
+        throw new Error('Invalid file format - no page markers found');
+      }
+
+      // Parse original pages
+      const pageMap = this.translationManager.parseTranslationFile(text);
+
+      if (pageMap.size === 0) {
+        throw new Error('No pages found in file');
+      }
+
+      // Store as original map
+      this.originalMap = pageMap;
+
+      // Show success
+      this.elements.originalImportStatus.textContent = `✓ Imported ${pageMap.size} original pages`;
+      this.elements.originalImportStatus.classList.remove('hidden');
+      this.elements.originalImportStatus.style.color = '#859900';
+
+      // If we have both maps, construct interleaved EPUB and load it
+      if (this.originalMap && this.translationMap) {
+        await this.loadInterleavedAsEPUB();
+      }
+    } catch (error) {
+      this.elements.originalImportStatus.textContent = `✗ Error: ${error.message}`;
+      this.elements.originalImportStatus.style.color = '#dc322f';
+      this.elements.originalImportStatus.classList.remove('hidden');
+    }
+
+    // Reset file input
+    event.target.value = '';
+  }
+
+  /**
+   * Handle translation file import
+   * @param {Event} event - File input change event
+   */
+  async handleTranslationImport(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+
+      // Parse translation file
+      const pageMap = this.translationManager.parseTranslationFile(text);
+
+      if (pageMap.size === 0) {
+        throw new Error("No translated pages found in file");
+      }
+
+      // Store in state
+      this.translationMap = pageMap;
+
+      // Show success
+      this.elements.translationImportStatus.textContent = `✓ Imported ${pageMap.size} translated pages`;
+      this.elements.translationImportStatus.classList.remove("hidden");
+      this.elements.translationImportStatus.style.color = "#859900";
+
+      // If we have both maps, construct interleaved EPUB and load it
+      if (this.originalMap && this.translationMap) {
+        await this.loadInterleavedAsEPUB();
+      }
+    } catch (error) {
+      this.elements.translationImportStatus.textContent = `✗ Error: ${error.message}`;
+      this.elements.translationImportStatus.style.color = "#dc322f";
+      this.elements.translationImportStatus.classList.remove("hidden");
+    }
+
+    // Clear file input
+    event.target.value = "";
+  }
+
+  /**
+   * Load interleaved original+translation as virtual chapters
+   * (separate chapters for pagination, but exported as single chapter)
+   */
+  async loadInterleavedAsEPUB() {
+    try {
+      const isBilingual = this.elements.enableTranslation?.checked || false;
+
+      // Get all page numbers sorted
+      const pageNumbers = Array.from(this.originalMap.keys()).sort((a, b) => a - b);
+
+      // Build array of "virtual chapters" (each imported page is separate for pagination)
+      this.importedChapters = [];
+
+      for (const pageNum of pageNumbers) {
+        const originalHTML = this.originalMap.get(pageNum);
+        if (originalHTML && originalHTML.trim()) {
+          this.importedChapters.push(originalHTML);
+        }
+
+        if (isBilingual) {
+          const translatedHTML = this.translationMap?.get(pageNum);
+          if (translatedHTML && translatedHTML.trim()) {
+            this.importedChapters.push(translatedHTML);
+          }
+        }
+      }
+
+      // Load as imported mode with virtual chapters
+      this.epubLoaded = true;
+      this.currentMode = "imported";
+      this.suppressChapterMarkers = true; // Flag to suppress chapter markers in export
+
+      // Load first virtual chapter
+      await this.loadChapter(0);
+
+      // Enable convert button
+      this.elements.convertBtn.disabled = false;
+
+      console.log(`Loaded ${this.importedChapters.length} virtual chapters for pagination`);
+    } catch (error) {
+      console.error('Error loading interleaved content:', error);
+      alert(`Error loading interleaved content: ${error.message}`);
+    }
+  }
+
+  /**
+   * Export bilingual content from imported files only (no EPUB)
+   */
+  async exportFromImportedFiles(zip, outputFormat, settings, originalMap, translationMap) {
+    try {
+      const isZipBased = outputFormat === "zip" || outputFormat === "xth";
+      const isBilingual = this.elements.enableTranslation?.checked || false;
+
+      // Get all page numbers (use original map as source of truth)
+      const pageNumbers = Array.from(originalMap.keys()).sort((a, b) => a - b);
+      const totalPages = isBilingual ? pageNumbers.length * 2 : pageNumbers.length;
+
+      let globalPageNumber = 1;
+
+      // Initialize XTC builder if needed
+      if (outputFormat === "xtc") {
+        this.xtcBuilder.clear();
+        this.xtcBuilder.setMetadata({
+          title: "Imported Translation",
+          creator: "Unknown",
+        });
+        this.xtcBuilder.addChapter("Imported Pages", 0);
+      } else if (outputFormat === "epub") {
+        this.epubBuilder.clear();
+        this.epubBuilder.setMetadata({
+          title: "Imported Translation",
+          creator: "Unknown",
+          language: "en",
+        });
+      }
+
+      for (const pageNum of pageNumbers) {
+        const progress = (globalPageNumber / totalPages) * 100;
+
+        // Render original page
+        const originalHTML = originalMap.get(pageNum);
+        this.updateProgress(`Rendering original page ${pageNum}...`, progress);
+
+        const { scaledElement: origElement } = await this.paginator.loadTranslatedPageWithScaling(
+          originalHTML,
+          settings.fontSize,
+        );
+
+        await this.renderAndAddPage(origElement, outputFormat, zip, globalPageNumber, settings);
+        globalPageNumber++;
+
+        // Render translated page if bilingual mode
+        if (isBilingual && translationMap.has(pageNum)) {
+          const translatedHTML = translationMap.get(pageNum);
+          this.updateProgress(`Rendering translated page ${pageNum}...`, progress);
+
+          const { scaledElement: transElement } = await this.paginator.loadTranslatedPageWithScaling(
+            translatedHTML,
+            settings.fontSize,
+          );
+
+          await this.renderAndAddPage(transElement, outputFormat, zip, globalPageNumber, settings);
+          globalPageNumber++;
+        }
+      }
+
+      // Generate output file
+      await this.finalizeExport(outputFormat, zip, "imported-translation");
+
+      this.updateProgress(`Export complete! ${globalPageNumber - 1} pages exported.`, 100);
+
+      setTimeout(() => {
+        this.elements.progressContainer.classList.add("hidden");
+        this.elements.convertBtn.disabled = false;
+        this.isConverting = false;
+      }, 3000);
+    } catch (error) {
+      console.error("Export error:", error);
+      this.updateProgress(`Error: ${error.message}`, 100);
+      this.elements.convertBtn.disabled = false;
+      this.isConverting = false;
+    }
+  }
+
+  /**
+   * Render page element and add to output
+   */
+  async renderAndAddPage(pageElement, outputFormat, zip, globalPageNumber, settings) {
+    if (outputFormat === "xth" || outputFormat === "xtc") {
+      const canvas = await this.renderer.renderPageToCanvas(pageElement, settings.fontFamily, settings);
+      if (canvas) {
+        const xthBlob = this.xthEncoder.encode(canvas);
+        if (outputFormat === "xth") {
+          const filename = `page-${String(globalPageNumber).padStart(4, "0")}.xth`;
+          zip.file(filename, xthBlob);
+        } else {
+          const xthBuffer = await xthBlob.arrayBuffer();
+          this.xtcBuilder.addPage(xthBuffer);
+        }
+      }
+    } else {
+      const blob = await this.renderer.renderPageToImage(pageElement, settings.fontFamily, settings);
+      if (outputFormat === "zip") {
+        const filename = `page-${String(globalPageNumber).padStart(4, "0")}.jpg`;
+        zip.file(filename, blob);
+      } else if (outputFormat === "epub") {
+        this.epubBuilder.addImage(blob, globalPageNumber);
+      }
+    }
+  }
+
+  /**
+   * Finalize and download export
+   */
+  async finalizeExport(outputFormat, zip, baseFilename) {
+    let blob, filename;
+
+    if (outputFormat === "xth" || outputFormat === "zip") {
+      blob = await zip.generateAsync({ type: "blob" });
+      filename = `${baseFilename}.zip`;
+    } else if (outputFormat === "xtc") {
+      const xtcBuffer = this.xtcBuilder.generate();
+      blob = new Blob([xtcBuffer], { type: "application/octet-stream" });
+      filename = `${baseFilename}.xtc`;
+    } else if (outputFormat === "epub") {
+      blob = await this.epubBuilder.build();
+      filename = `${baseFilename}.epub`;
+    }
+
+    // Download
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  /**
+   * Show preview of imported page
+   * @param {number} pageNumber - Page number to preview
+   * @param {boolean} showOriginal - True to show original, false to show translation
+   */
+  async showImportedPagePreview(pageNumber, showOriginal = true) {
+    try {
+      console.log('showImportedPagePreview called with pageNumber:', pageNumber, 'showOriginal:', showOriginal);
+
+      // Get HTML from appropriate map
+      const html = showOriginal
+        ? this.originalMap?.get(pageNumber)
+        : this.translationMap?.get(pageNumber);
+
+      console.log('HTML found:', html ? html.substring(0, 100) : 'null');
+
+      if (!html) {
+        console.warn(`No imported page found for page ${pageNumber} (${showOriginal ? 'original' : 'translation'})`);
+        return;
+      }
+
+      // Get current settings
+      const settings = {
+        fontFamily: this.elements.fontFamily.value,
+        fontSize: parseInt(this.elements.fontSize.value),
+        lineHeight: parseFloat(this.elements.lineHeight.value),
+        customCSS: this.elements.customCSS.value,
+      };
+
+      // Create a temporary container with the HTML
+      const tempContainer = document.createElement('div');
+      tempContainer.style.width = `${this.paginator.width}px`;
+      tempContainer.style.height = `${this.paginator.height}px`;
+      tempContainer.style.padding = `${this.paginator.padding}px`;
+      tempContainer.style.overflow = 'hidden';
+      tempContainer.style.position = 'relative';
+      tempContainer.style.backgroundColor = '#fff';
+      tempContainer.style.boxSizing = 'border-box';
+      tempContainer.style.fontFamily = settings.fontFamily;
+      tempContainer.style.fontSize = `${settings.fontSize}px`;
+      tempContainer.style.lineHeight = settings.lineHeight;
+      tempContainer.innerHTML = html;
+
+      console.log('tempContainer created, innerHTML length:', tempContainer.innerHTML.length);
+
+      // Update HTML preview viewport
+      console.log('htmlPreviewContainer exists:', !!this.paginator.htmlPreviewContainer);
+
+      if (this.paginator.htmlPreviewContainer) {
+        this.paginator.htmlPreviewContainer.innerHTML = '';
+
+        // Create wrapper to hold the preview
+        const wrapper = document.createElement('div');
+        wrapper.style.width = `${this.paginator.width}px`;
+        wrapper.style.height = `${this.paginator.height}px`;
+        wrapper.style.overflow = 'hidden';
+        wrapper.style.position = 'relative';
+        wrapper.style.backgroundColor = '#fff';
+
+        wrapper.appendChild(tempContainer);
+        this.paginator.htmlPreviewContainer.appendChild(wrapper);
+
+        console.log('Preview added to htmlPreviewContainer');
+      } else {
+        console.error('htmlPreviewContainer not found!');
+      }
+
+      // Update page info
+      const isBilingual = this.elements.enableTranslation?.checked || false;
+      const totalPages = isBilingual
+        ? (this.originalMap?.size || 0) * 2
+        : Math.max(this.originalMap?.size || 0, this.translationMap?.size || 0);
+
+      const pageType = showOriginal ? 'Original' : 'Translation';
+      this.elements.chapterTitle.textContent = `Imported ${pageType}`;
+      this.elements.pageInfo.textContent = `Page ${pageNumber} (${pageType})`;
+    } catch (error) {
+      console.error('Error showing imported page preview:', error);
+    }
   }
 
   async goToPrevPage() {
@@ -595,18 +1006,24 @@ class EPUBConverterApp {
 
       // Initialize ZIP, EPUB, or XTC builder
       const zip = isZipBased ? new JSZip() : null;
+
+      // Get metadata based on mode
+      const metadata = this.currentMode === "imported"
+        ? { title: "Imported Translation", creator: "Unknown", language: "en" }
+        : this.parser.metadata;
+
       if (outputFormat === "epub") {
         this.epubBuilder.clear();
         this.epubBuilder.setMetadata({
-          title: `${this.parser.metadata.title} (x4-imaged)`,
-          creator: this.parser.metadata.creator,
-          language: this.parser.metadata.language,
+          title: `${metadata.title} (x4-imaged)`,
+          creator: metadata.creator,
+          language: metadata.language,
         });
       } else if (outputFormat === "xtc") {
         this.xtcBuilder.clear();
         this.xtcBuilder.setMetadata({
-          title: this.parser.metadata.title,
-          creator: this.parser.metadata.creator || "Unknown",
+          title: metadata.title,
+          creator: metadata.creator || "Unknown",
         });
       }
 
@@ -625,8 +1042,10 @@ class EPUBConverterApp {
       let globalPageNumber = 1;
 
       // Use different chapter sources based on mode
-      const totalChapters =
-        this.currentMode === "arxiv"
+      let totalChapters =
+        this.currentMode === "imported"
+          ? this.importedChapters.length
+          : this.currentMode === "arxiv"
           ? this.arxivChapters.length
           : this.parser.spine.length;
       let maxPages = Infinity;
@@ -652,6 +1071,9 @@ class EPUBConverterApp {
       let avgTimePerPage = 0;
       let estimatedTotalPages = 0;
 
+      // For text export mode
+      const pages = [];
+
       // === PROCESSING LOOP ===
       for (let chapterIndex = 0; chapterIndex < totalChapters; chapterIndex++) {
         if (globalPageNumber > maxPages) break;
@@ -662,7 +1084,9 @@ class EPUBConverterApp {
 
         // Get chapter content based on mode
         const html =
-          this.currentMode === "arxiv"
+          this.currentMode === "imported"
+            ? this.importedChapters[chapterIndex]
+            : this.currentMode === "arxiv"
             ? this.arxivChapters[chapterIndex]
             : await this.parser.getChapterContent(chapterIndex);
 
@@ -670,7 +1094,8 @@ class EPUBConverterApp {
         const pageCount = this.paginator.pageCount;
 
         // Add chapter marker for XTC format (0-indexed page number)
-        if (outputFormat === "xtc") {
+        // Skip if suppressChapterMarkers is set (for imported virtual chapters)
+        if (outputFormat === "xtc" && !this.suppressChapterMarkers) {
           const chapterTitle =
             this.currentMode === "arxiv"
               ? chapterIndex === 0
@@ -685,6 +1110,14 @@ class EPUBConverterApp {
             );
           } else {
             this.xtcBuilder.addChapter(chapterTitle, globalPageNumber - 1);
+          }
+        } else if (outputFormat === "xtc" && this.suppressChapterMarkers && chapterIndex === 0) {
+          // For imported mode, add a single chapter marker at the beginning
+          const title = "Imported Translation";
+          if (currentVolume) {
+            currentVolume.builder.addChapter(title, 0);
+          } else {
+            this.xtcBuilder.addChapter(title, 0);
           }
         }
 
@@ -762,7 +1195,41 @@ class EPUBConverterApp {
           // Start timing this page
           pageStartTime = performance.now();
 
-          const pageElement = this.paginator.getCurrentPageElement();
+          // Use imported original HTML if available, otherwise use paginated element
+          let pageElement;
+          if (this.originalMap?.has(globalPageNumber)) {
+            // Use imported original HTML
+            const originalHTML = this.originalMap.get(globalPageNumber);
+            const { scaledElement } = await this.paginator.loadTranslatedPageWithScaling(
+              originalHTML,
+              settings.fontSize,
+            );
+            pageElement = scaledElement;
+          } else {
+            // Use paginated element
+            pageElement = this.paginator.getCurrentPageElement();
+          }
+
+          // TEXT EXPORT MODE: Extract HTML only, no rendering
+          if (this.exportMode === "text-for-translation") {
+            const simplifiedHTML =
+              this.htmlExtractor.extractSimplifiedHTML(pageElement);
+            pages.push({
+              chapterIndex,
+              chapterTitle: this.getChapterTitle(chapterIndex),
+              pageIndex,
+              globalPageNumber,
+              html: simplifiedHTML,
+            });
+
+            this.updateProgress(
+              `Extracting page ${globalPageNumber}... (Ch ${chapterIndex + 1}, Pg ${pageIndex + 1})`,
+              progress,
+            );
+
+            globalPageNumber++;
+            continue; // Skip rendering
+          }
 
           // >>> START OF FIXED LOGIC
           try {
@@ -854,6 +1321,76 @@ class EPUBConverterApp {
           );
 
           globalPageNumber++;
+
+          // BILINGUAL MODE: Render translated page if available
+          const bilingualMode = this.elements.enableTranslation?.checked || false;
+          if (bilingualMode && this.translationMap?.has(globalPageNumber - 1)) {
+            const translatedHTML = this.translationMap.get(globalPageNumber - 1);
+
+            try {
+              // Load with auto-scaling
+              const { scaledElement, finalFontSize } =
+                await this.paginator.loadTranslatedPageWithScaling(
+                  translatedHTML,
+                  settings.fontSize,
+                );
+
+              // Render translated page
+              if (outputFormat === "xth" || outputFormat === "xtc") {
+                const canvas = await this.renderer.renderPageToCanvas(
+                  scaledElement,
+                  settings.fontFamily,
+                  settings,
+                );
+
+                if (canvas) {
+                  const xthBlob = this.xthEncoder.encode(canvas);
+
+                  if (outputFormat === "xth") {
+                    const filename = `page-${String(globalPageNumber).padStart(4, "0")}.xth`;
+                    zip.file(filename, xthBlob);
+                  } else {
+                    const xthBuffer = await xthBlob.arrayBuffer();
+                    if (currentVolume) {
+                      currentVolume.builder.addPage(xthBuffer);
+                      currentVolume.pagesInVolume++;
+                      pagesInCurrentVolume++;
+                    } else {
+                      this.xtcBuilder.addPage(xthBuffer);
+                    }
+                  }
+                }
+              } else {
+                const blob = await this.renderer.renderPageToImage(
+                  scaledElement,
+                  settings.fontFamily,
+                  settings,
+                );
+
+                if (outputFormat === "zip") {
+                  const filename = `page-${String(globalPageNumber).padStart(4, "0")}.jpg`;
+                  zip.file(filename, blob);
+                } else {
+                  this.epubBuilder.addImage(blob, globalPageNumber);
+                }
+              }
+
+              this.updateProgress(
+                `Converting translated page ${globalPageNumber}... (Ch ${chapterIndex + 1}, Pg ${pageIndex + 1})`,
+                progress,
+              );
+
+              globalPageNumber++;
+
+              // Restore original settings
+              this.paginator.updateSettings(settings);
+            } catch (transErr) {
+              console.error(
+                `ERROR rendering translated page ${globalPageNumber - 1}:`,
+                transErr,
+              );
+            }
+          }
         }
 
         // Update estimated total pages after rendering this chapter
@@ -864,6 +1401,38 @@ class EPUBConverterApp {
           const avgPagesPerChapter = (globalPageNumber - 1) / chaptersProcessed;
           estimatedTotalPages = Math.ceil(avgPagesPerChapter * totalChapters);
         }
+      }
+
+      // TEXT EXPORT MODE: Generate text file and return early
+      if (this.exportMode === "text-for-translation") {
+        this.updateProgress(
+          `Generating text file with ${pages.length} pages...`,
+          100,
+        );
+
+        const textBlob = this.translationManager.exportPagesToText(
+          pages,
+          this.parser.metadata,
+        );
+        const textFilename = `${this.sanitizeFilename(this.parser.metadata.title)}-pages.txt`;
+
+        // Download
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(textBlob);
+        a.download = textFilename;
+        a.click();
+        URL.revokeObjectURL(a.href);
+
+        const completionMsg = `Export complete! ${pages.length} pages exported to ${textFilename}`;
+        this.updateProgress(completionMsg, 100);
+
+        setTimeout(() => {
+          this.elements.progressContainer.classList.add("hidden");
+          this.elements.convertBtn.disabled = false;
+          this.isConverting = false;
+        }, 3000);
+
+        return; // Skip normal output generation
       }
 
       // === FINAL GENERATION ===
@@ -886,7 +1455,7 @@ class EPUBConverterApp {
           const customPattern = this.elements.xtcFilenamePattern.value.trim();
           const baseTitle = customPattern
             ? this.sanitizeFilename(customPattern)
-            : this.sanitizeFilename(this.parser.metadata.title);
+            : this.sanitizeFilename(metadata.title);
 
           // Only use page numbers if this is truly a multi-volume book
           // (i.e., we already have other volumes, or this volume is split)
@@ -913,7 +1482,7 @@ class EPUBConverterApp {
           const customPattern = this.elements.xtcFilenamePattern.value.trim();
           const baseTitle = customPattern
             ? this.sanitizeFilename(customPattern)
-            : this.sanitizeFilename(this.parser.metadata.title);
+            : this.sanitizeFilename(metadata.title);
           filename = `${baseTitle}.xtc`;
         }
       } else if (isZipBased) {

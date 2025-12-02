@@ -310,6 +310,79 @@ h1 { margin-top: 2em; }"
           </div>
         </div>
 
+        <div class="settings-section collapsed">
+          <h2 class="collapsible">
+            Bilingual Translation <span class="collapse-icon">▼</span>
+          </h2>
+          <div class="section-content">
+            <div class="control-group">
+              <label>
+                <input type="checkbox" id="enable-translation" />
+                Enable bilingual mode (interleaved original + translated pages)
+              </label>
+              <small style="color: #888; display: block; margin-top: 4px">
+                Each original page will be followed by its translated version
+              </small>
+            </div>
+
+            <div class="control-group">
+              <label>Step 1: Export pages for translation</label>
+              <button id="export-for-translation-btn" class="apply-css-btn">
+                Export Text for Translation
+              </button>
+              <small style="color: #888; display: block; margin-top: 4px">
+                Exports simplified HTML in a marked text file. Translate
+                externally (e.g., Gemini) and re-import.
+              </small>
+            </div>
+
+            <div class="control-group">
+              <label>Step 2: Import both original and translated files</label>
+              <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem">
+                <button id="import-original-btn" class="apply-css-btn" style="flex: 1">
+                  1. Import Original
+                </button>
+                <button id="import-translation-btn" class="apply-css-btn" style="flex: 1">
+                  2. Import Translated
+                </button>
+              </div>
+              <input
+                type="file"
+                id="original-file-upload"
+                accept=".txt"
+                style="display: none"
+              />
+              <input
+                type="file"
+                id="translation-file-upload"
+                accept=".txt"
+                style="display: none"
+              />
+              <div id="original-import-status" class="file-info hidden"></div>
+              <div id="translation-import-status" class="file-info hidden"></div>
+              <small style="color: #888; display: block; margin-top: 4px">
+                Import both files (can be edited/partial). Pages will be matched by page number.
+              </small>
+            </div>
+
+            <div class="control-group">
+              <label for="translation-target-lang"
+                >Target language code (for filename)</label
+              >
+              <input
+                type="text"
+                id="translation-target-lang"
+                placeholder="en"
+                value="en"
+                style="width: 100px"
+              />
+              <small style="color: #888; display: block; margin-top: 4px">
+                Used in filename: book-de-en.xtc
+              </small>
+            </div>
+          </div>
+        </div>
+
         <div class="settings-section">
           <button id="convert-btn" class="convert-btn" disabled>
             Convert & Export

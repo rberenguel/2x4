@@ -301,6 +301,48 @@ export class Paginator {
   }
 
   /**
+   * Load translated HTML with auto font scaling if overflow
+   * @param {string} translatedHTML - Translated HTML content
+   * @param {number} baseFontSize - Original font size (px)
+   * @param {number} maxHeight - Target height in pixels (default 800)
+   * @returns {Promise<Object>} - {scaledElement, finalFontSize}
+   */
+  async loadTranslatedPageWithScaling(translatedHTML, baseFontSize, maxHeight = 800) {
+    const minFontSize = 10;
+    const maxIterations = 10;
+    let currentFontSize = baseFontSize;
+
+    for (let i = 0; i < maxIterations; i++) {
+      // Apply current font size
+      this.container.style.fontSize = `${currentFontSize}px`;
+      this.container.innerHTML = translatedHTML;
+
+      // Wait for layout
+      await this.waitForContentLoad();
+
+      // Measure actual height
+      const actualHeight = this.container.scrollHeight;
+
+      // If fits or at minimum, return
+      if (actualHeight <= maxHeight || currentFontSize <= minFontSize) {
+        return {
+          scaledElement: this.getCurrentPageElement(),
+          finalFontSize: currentFontSize
+        };
+      }
+
+      // Reduce font by 10%
+      currentFontSize = Math.max(minFontSize, currentFontSize * 0.9);
+    }
+
+    // Fallback to minimum
+    return {
+      scaledElement: this.getCurrentPageElement(),
+      finalFontSize: minFontSize
+    };
+  }
+
+  /**
    * Clear current content
    */
   clear() {
