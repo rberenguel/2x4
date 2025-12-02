@@ -112,8 +112,7 @@ export class XTCBuilder {
     view.setUint8(1, 0x54); // 'T'
     view.setUint8(2, 0x43); // 'C'
     view.setUint8(3, 0x00); // '\0'
-    view.setUint8(4, 0x00);
-    view.setUint8(5, 0x01); // Version?
+    view.setUint16(4, 0x0100, true); // Version 1.0 (uint16_t little-endian)
     view.setUint16(6, actualPageCount, true); // Page count
     view.setUint8(8, 0);
     view.setUint8(9, 1);
