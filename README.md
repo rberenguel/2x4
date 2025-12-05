@@ -44,9 +44,9 @@ A browser-based PWA and Chrome extension that converts EPUB files, ArXiv papers,
 - **One-click extraction:** Extract articles from any webpage using Mozilla Readability
 - **Reading queue:** Build a multi-article queue before converting
 - **Queue management:** Add, remove, reorder articles
-- **Seamless integration:** Click "Open in 2X4" → PWA automatically loads queue
+- **Self-contained converter:** Extension includes its own converter interface with full PWA features
+- **No PWA needed:** Convert directly in the extension - all typography, format, and preview options available
 - **Persistent storage:** Queue survives browser restarts
-- **No export/import:** Extension and PWA communicate directly via chrome.storage
 
 > **NOTE:**
 > Conversion is slow for "reasons" (html2canvas overhead). Multiple tabs converting in parallel works fine.
@@ -59,28 +59,27 @@ A browser-based PWA and Chrome extension that converts EPUB files, ArXiv papers,
 
    ```bash
    # Clone or download this repo
-   git clone https://github.com/yourusername/epubx4
-   cd epubx4
+   git clone https://github.com/rberenguel/2x4
+   cd 2x4
 
    # In Chrome, go to chrome://extensions/
    # Enable "Developer mode"
    # Click "Load unpacked"
-   # Select the epubx4 folder (root, which contains manifest.json)
+   # Select the "extension" folder (contains manifest.json)
    ```
 
-2. **Extract Articles:**
+2. **Extract & Convert Articles:**
 
    - Browse to any article (Medium, news sites, blogs, etc.)
    - Click the 2X4 extension icon in Chrome toolbar
    - Click "Add Current Page" to extract article
    - Repeat for more articles to build a queue
-   - Use arrow buttons to reorder articles
-
-3. **Convert:**
-   - Click "🚀 Open in 2X4" button
-   - PWA opens in new tab with queue automatically loaded
-   - Adjust typography settings if desired
-   - Navigate through articles as chapters
+   - Use arrow buttons to reorder articles as needed
+   - Click "Convert Queue" button
+   - Extension opens converter interface in new tab
+   - Queue is automatically loaded
+   - Adjust typography/format settings if desired
+   - Preview articles with navigation
    - Click "Convert & Export" to generate XTC file
 
 ### Option 2: Standalone PWA (EPUB / ArXiv)
@@ -114,12 +113,6 @@ A browser-based PWA and Chrome extension that converts EPUB files, ArXiv papers,
    - OR paste full HTML source from browser (View Source)
    - Click "Load from URL" or "Load from HTML"
    - Adjust settings and convert
-
-4. **Convert web articles (without extension):**
-   - Use extension to export queue (fallback option)
-   - Select "Web Article" mode in PWA
-   - Upload exported queue file
-   - Convert as usual
 
 ### 3. Transfer to Device
 
@@ -159,25 +152,30 @@ By default, XTC export creates a **single file** containing the entire book. For
 ### Repository Structure
 
 ```
-epubx4/
-├── manifest.json          (Chrome extension manifest)
+2x4/
+├── index.html             (Main PWA interface for EPUB/ArXiv)
 ├── manifest-pwa.json      (PWA manifest)
-├── index.html             (Main PWA interface, at root for clean URLs)
-├── extension/             (Extension-specific code)
+├── extension/             (Chrome Extension)
+│   ├── manifest.json      (Extension manifest V3)
 │   ├── background.js      (Service worker, queue management)
 │   ├── content.js         (Article extraction with Readability)
 │   ├── popup.html/js/css  (Extension popup UI)
+│   ├── converter.html/js  (Self-contained converter interface)
 │   ├── lib/Readability.js (Mozilla Readability library)
+│   ├── jszip.min.js       (Local JSZip for CSP compliance)
+│   ├── hyphenopoly-config.js (Hyphenation config)
 │   └── icons/             (Extension icons)
-├── js/                    (Shared PWA/Extension code)
-│   ├── main.js            (Main app logic, chrome.storage detection)
+├── js/                    (Shared conversion code)
+│   ├── main.js            (PWA app logic - EPUB/ArXiv only)
 │   ├── epub-parser.js     (EPUB parsing with JSZip)
 │   ├── arxiv-parser.js    (ArXiv HTML parsing)
-│   ├── article-parser.js  (Web article queue parsing)
+│   ├── article-parser.js  (Web article queue parsing - used by extension)
 │   ├── paginator.js       (CSS column pagination)
 │   ├── renderer.js        (Canvas rendering with html2canvas)
 │   ├── xth-encoder.js     (4-level grayscale encoding)
 │   ├── xtc-builder.js     (XTC container format)
+│   ├── conversion-pipeline.js (Core conversion logic)
+│   ├── conversion-controller.js (UI progress handling)
 │   └── ...
 ├── css/                   (Shared styles)
 │   ├── style.css          (Main UI, Solarized Light theme)
@@ -186,14 +184,14 @@ epubx4/
 └── fonts/                 (Embedded fonts for rendering)
 ```
 
-### Extension ↔ PWA Communication
+### Extension Architecture
 
-1. **Extension extracts articles** → Stores in `chrome.storage.local.articleQueue`
-2. **User clicks "Open in 2X4"** → Extension opens `chrome-extension://[id]/index.html`
-3. **PWA detects extension context** → Checks `typeof chrome !== 'undefined' && chrome.storage`
-4. **PWA reads queue** → `chrome.storage.local.get('articleQueue')`
-5. **Auto-loads articles** → Switches to Web Article mode, populates preview
-6. **No file operations needed** → Seamless experience!
+1. **Popup UI** (`popup.html`) → Queue management (add, remove, reorder)
+2. **Background worker** (`background.js`) → Stores queue in `chrome.storage.local`
+3. **Content script** (`content.js`) → Extracts articles with Mozilla Readability
+4. **Converter interface** (`extension/converter.html`) → Self-contained converter with full PWA features
+5. **Queue auto-loading** → Converter reads from `chrome.storage.local` on launch
+6. **No PWA dependency** → Extension works completely standalone
 
 ### Browser Compatibility
 
@@ -205,15 +203,17 @@ Extension requires Chrome/Chromium for `chrome.storage` and Manifest V3 support.
 
 ### Extension Not Working
 
-- Make sure you loaded the **root folder** (containing `manifest.json`), not the `extension/` subfolder
+- Make sure you loaded the **extension folder** (containing `manifest.json`)
 - Check `chrome://extensions/` for errors
 - Ensure "Developer mode" is enabled
+- Verify extension icon appears in Chrome toolbar
 
-### Articles Not Auto-Loading
+### Articles Not Auto-Loading in Converter
 
 - Open browser console (F12) and check for errors
 - Verify queue is not empty (extension badge should show count)
-- Try refreshing the PWA tab
+- Try closing and reopening the converter tab
+- Check `chrome.storage.local` in extension background worker console
 
 ### Slow Conversion
 

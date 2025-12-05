@@ -92,6 +92,7 @@ class EPUBConverterApp {
       lineHeightValue: document.getElementById("line-height-value"),
       jpegQuality: document.getElementById("jpeg-quality"),
       jpegQualityValue: document.getElementById("jpeg-quality-value"),
+      jpegQualitySection: document.getElementById("jpeg-quality-section"),
       customCSS: document.getElementById("custom-css"),
       applyCSSBtn: document.getElementById("apply-css-btn"),
       outputFormat: document.getElementById("output-format"),
@@ -292,6 +293,9 @@ class EPUBConverterApp {
       format === "xtc" ? "block" : "none";
     this.elements.xtcFilenameSettings.style.display =
       format === "xtc" ? "block" : "none";
+    // Show JPEG quality only for formats that use JPEG (EPUB and ZIP)
+    this.elements.jpegQualitySection.style.display =
+      format === "epub" || format === "zip" ? "block" : "none";
   }
 
   switchMode(mode) {

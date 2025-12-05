@@ -71,6 +71,7 @@ class ExtensionConverter {
       // Image quality
       jpegQuality: document.getElementById("jpeg-quality"),
       jpegQualityValue: document.getElementById("jpeg-quality-value"),
+      jpegQualitySection: document.getElementById("jpeg-quality-section"),
 
       // Output format
       outputFormat: document.getElementById("output-format"),
@@ -225,6 +226,9 @@ class ExtensionConverter {
 
     this.elements.xtcSplitSettings.style.display = isXTC ? "block" : "none";
     this.elements.xtcFilenameSettings.style.display = isXTC ? "block" : "none";
+    // Show JPEG quality only for formats that use JPEG (EPUB and ZIP)
+    this.elements.jpegQualitySection.style.display =
+      format === "epub" || format === "zip" ? "block" : "none";
   }
 
   async loadQueueFromStorage() {
