@@ -1,0 +1,226 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  width: 400px;
+  max-height: 600px;
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  font-size: 14px;
+  color: #002b36;
+  background: #fdf6e3;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+header {
+  padding: 16px;
+  background: #eee8d5;
+  border-bottom: 1px solid #93a1a1;
+}
+
+h1 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #073642;
+}
+
+.stats {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: #586e75;
+}
+
+.actions {
+  padding: 12px;
+  background: #fdf6e3;
+  border-bottom: 1px solid #eee8d5;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: #268bd2;
+  color: white;
+  width: 100%;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #2075b8;
+}
+
+.btn-primary:active:not(:disabled) {
+  background: #1c5f9e;
+}
+
+.btn-success {
+  background: #859900;
+  color: white;
+  flex: 1;
+}
+
+.btn-success:hover:not(:disabled) {
+  background: #6f8000;
+}
+
+.btn-danger {
+  background: #dc322f;
+  color: white;
+  flex: 1;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #c62925;
+}
+
+.queue-container {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 200px;
+  max-height: 400px;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+  color: #93a1a1;
+}
+
+.empty-state p {
+  margin-bottom: 8px;
+}
+
+.empty-state .hint {
+  font-size: 12px;
+  color: #93a1a1;
+}
+
+.queue-list {
+  list-style: none;
+}
+
+.queue-item {
+  padding: 12px;
+  border-bottom: 1px solid #eee8d5;
+  background: white;
+  transition: background 0.2s;
+}
+
+.queue-item:hover {
+  background: #fdf6e3;
+}
+
+.queue-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  margin-bottom: 6px;
+}
+
+.queue-item-title {
+  font-weight: 500;
+  color: #073642;
+  flex: 1;
+  margin-right: 8px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.queue-item-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+  font-size: 16px;
+}
+
+.icon-btn:hover {
+  opacity: 1;
+}
+
+.queue-item-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 11px;
+  color: #93a1a1;
+}
+
+.queue-item-site {
+  font-style: italic;
+}
+
+footer {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  background: #eee8d5;
+  border-top: 1px solid #93a1a1;
+}
+
+/* Loading state */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  color: #93a1a1;
+}
+
+/* Scrollbar styling */
+.queue-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.queue-container::-webkit-scrollbar-track {
+  background: #eee8d5;
+}
+
+.queue-container::-webkit-scrollbar-thumb {
+  background: #93a1a1;
+  border-radius: 4px;
+}
+
+.queue-container::-webkit-scrollbar-thumb:hover {
+  background: #586e75;
+}

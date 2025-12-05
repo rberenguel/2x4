@@ -148,7 +148,8 @@ body {
   font-size: 0.875rem;
 }
 
-#epub-upload {
+#epub-upload,
+#article-upload {
   display: none;
 }
 
@@ -559,6 +560,65 @@ body {
   box-sizing: border-box;
   visibility: visible;
   /* Column settings are set dynamically by paginator.js */
+}
+
+/* Custom Radio Buttons */
+input[type="radio"] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--base1);
+  border-radius: 50%;
+  background-color: var(--base3);
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+input[type="radio"]:hover {
+  border-color: var(--blue);
+  background-color: var(--base2);
+}
+
+input[type="radio"]:checked {
+  border-color: var(--blue);
+  background-color: var(--blue);
+}
+
+input[type="radio"]:checked::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--base3);
+}
+
+input[type="radio"]:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(38, 139, 210, 0.2);
+}
+
+/* Mode selection labels */
+.settings-section label[style*="display: flex"] {
+  font-weight: 500;
+  color: var(--base01);
+  transition: color 0.2s ease;
+}
+
+.settings-section label[style*="display: flex"]:hover {
+  color: var(--base02);
+}
+
+.settings-section input[type="radio"]:checked + span {
+  color: var(--blue);
+  font-weight: 600;
 }
 
 /* Responsive */

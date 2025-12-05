@@ -6,7 +6,20 @@
 export class HTMLExtractor {
   constructor() {
     // Only allow these HTML tags
-    this.allowedTags = ['p', 'strong', 'em', 'b', 'i', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'br'];
+    this.allowedTags = [
+      "p",
+      "strong",
+      "em",
+      "b",
+      "i",
+      "h1",
+      "h2",
+      "h3",
+      "h4",
+      "h5",
+      "h6",
+      "br",
+    ];
   }
 
   /**
@@ -21,9 +34,9 @@ export class HTMLExtractor {
     // Append to DOM temporarily
     const wasInDOM = document.body.contains(pageElement);
     if (!wasInDOM) {
-      pageElement.style.position = 'absolute';
-      pageElement.style.left = '-9999px';
-      pageElement.style.top = '-9999px';
+      pageElement.style.position = "absolute";
+      pageElement.style.left = "-9999px";
+      pageElement.style.top = "-9999px";
       document.body.appendChild(pageElement);
     }
 
@@ -31,15 +44,20 @@ export class HTMLExtractor {
     const containerRect = pageElement.getBoundingClientRect();
 
     // Find the inner content container (the transformed element)
-    const innerContainer = pageElement.querySelector('[style*="transform"]') || pageElement.firstElementChild;
+    const innerContainer =
+      pageElement.querySelector('[style*="transform"]') ||
+      pageElement.firstElementChild;
 
     if (!innerContainer) {
       if (!wasInDOM) document.body.removeChild(pageElement);
-      return '';
+      return "";
     }
 
     // Extract only elements that are within visible bounds
-    const visibleHTML = this.extractVisibleElements(innerContainer, containerRect);
+    const visibleHTML = this.extractVisibleElements(
+      innerContainer,
+      containerRect,
+    );
 
     // Remove from DOM if we added it
     if (!wasInDOM) {
@@ -59,7 +77,7 @@ export class HTMLExtractor {
     const result = [];
 
     // Walk through all elements
-    const allElements = element.querySelectorAll('*');
+    const allElements = element.querySelectorAll("*");
 
     for (const el of allElements) {
       const rect = el.getBoundingClientRect();
@@ -75,8 +93,8 @@ export class HTMLExtractor {
 
       if (isVisible && this.allowedTags.includes(el.tagName.toLowerCase())) {
         // Check if this element contains only text (no nested allowed tags)
-        const hasAllowedChildren = Array.from(el.children).some(child =>
-          this.allowedTags.includes(child.tagName.toLowerCase())
+        const hasAllowedChildren = Array.from(el.children).some((child) =>
+          this.allowedTags.includes(child.tagName.toLowerCase()),
         );
 
         if (!hasAllowedChildren) {
@@ -85,8 +103,8 @@ export class HTMLExtractor {
           const text = el.textContent.trim();
 
           if (text.length > 0) {
-            if (tag === 'br') {
-              result.push('<br>');
+            if (tag === "br") {
+              result.push("<br>");
             } else {
               result.push(`<${tag}>${text}</${tag}>`);
             }
@@ -95,7 +113,7 @@ export class HTMLExtractor {
       }
     }
 
-    return this.normalizeWhitespace(result.join('\n'));
+    return this.normalizeWhitespace(result.join("\n"));
   }
 
   /**
@@ -148,13 +166,13 @@ export class HTMLExtractor {
    */
   normalizeWhitespace(html) {
     // Remove extra whitespace between tags
-    html = html.replace(/>\s+</g, '><');
+    html = html.replace(/>\s+</g, "><");
 
     // Normalize whitespace within text content
-    html = html.replace(/\s+/g, ' ');
+    html = html.replace(/\s+/g, " ");
 
     // Clean up empty tags
-    html = html.replace(/<(\w+)>\s*<\/\1>/g, '');
+    html = html.replace(/<(\w+)>\s*<\/\1>/g, "");
 
     return html;
   }

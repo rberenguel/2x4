@@ -199,3 +199,39 @@
 #virtual-device > *:last-child {
   margin-bottom: 0;
 }
+
+/* Web Article Styles */
+.web-article .article-header {
+  margin-bottom: 2em;
+  padding-bottom: 1em;
+  border-bottom: 2px solid #93a1a1;
+}
+
+.web-article .article-title {
+  font-size: 1.8em;
+  margin-bottom: 0.5em;
+  line-height: 1.2;
+}
+
+.web-article .article-byline {
+  font-style: italic;
+  color: #586e75;
+  margin: 0.5em 0;
+}
+
+.web-article .article-source {
+  font-size: 0.9em;
+  color: #93a1a1;
+  margin: 0.3em 0;
+}
+
+.web-article .article-url {
+  font-size: 0.75em;
+  color: #93a1a1;
+  margin: 0.3em 0;
+  word-break: break-all;
+}
+
+.web-article .article-content {
+  margin-top: 2em;
+}

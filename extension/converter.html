@@ -3,16 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>2X4</title>
-    <link rel="icon" type="image/x-icon" href="favicon.ico" />
-    <link rel="stylesheet" href="css/style.css" />
-    <link rel="stylesheet" href="css/reader.css" />
-    <link rel="stylesheet" href="css/arxiv.css" />
-    <link rel="manifest" href="manifest-pwa.json" />
+    <title>2X4 Converter</title>
+    <link rel="icon" type="image/x-icon" href="../favicon.ico" />
+    <!-- Reuse PWA styles -->
+    <link rel="stylesheet" href="../css/style.css" />
+    <link rel="stylesheet" href="../css/reader.css" />
+    <link rel="stylesheet" href="../css/arxiv.css" />
   </head>
   <body>
     <div class="container">
-      <!-- Left Panel: Settings -->
+      <!-- Left Panel: Settings (simplified for article mode) -->
       <aside class="settings-panel">
         <header>
           <h1>
@@ -21,121 +21,17 @@
               >(BETA)</span
             >
           </h1>
-          <p class="subtitle">to x4 (480×800)</p>
+          <p class="subtitle">Article Queue Converter</p>
         </header>
 
+        <!-- Queue info -->
         <div class="settings-section">
-          <div style="display: flex; gap: 1rem; margin-bottom: 0">
-            <label
-              style="
-                display: flex;
-                align-items: center;
-                gap: 0.5rem;
-                cursor: pointer;
-              "
-            >
-              <input
-                type="radio"
-                id="mode-epub"
-                name="mode"
-                value="epub"
-                checked
-              />
-              <span>EPUB</span>
-            </label>
-            <label
-              style="
-                display: flex;
-                align-items: center;
-                gap: 0.5rem;
-                cursor: pointer;
-              "
-            >
-              <input type="radio" id="mode-arxiv" name="mode" value="arxiv" />
-              <span>Arxiv</span>
-            </label>
+          <div id="queue-info" class="file-info" style="display: block">
+            <p id="queue-status">Loading queue...</p>
           </div>
         </div>
 
-        <!-- EPUB Mode Sections -->
-        <div id="epub-mode-sections">
-          <div class="settings-section">
-            <label for="epub-upload" class="file-upload-label">
-              <span class="upload-icon">📖</span>
-              <span class="upload-text">Choose EPUB File</span>
-              <input type="file" id="epub-upload" accept=".epub" />
-            </label>
-            <div id="file-info" class="file-info hidden"></div>
-          </div>
-        </div>
-        <!-- End EPUB Mode Sections -->
-
-        <!-- Arxiv Mode Sections -->
-        <div id="arxiv-mode-sections" style="display: none">
-          <div class="settings-section">
-            <h2>Load Arxiv Paper</h2>
-
-            <div class="control-group">
-              <label for="arxiv-url">Arxiv HTML URL</label>
-              <input
-                type="text"
-                id="arxiv-url"
-                placeholder="https://arxiv.org/html/2511.15304v2"
-                style="
-                  width: 100%;
-                  padding: 0.5rem;
-                  border: 1px solid #ccc;
-                  border-radius: 4px;
-                  font-family: monospace;
-                  font-size: 0.9rem;
-                "
-              />
-              <button
-                id="load-arxiv-btn"
-                class="apply-css-btn"
-                style="margin-top: 0.5rem"
-              >
-                Load from URL
-              </button>
-            </div>
-
-            <div style="margin: 1rem 0; text-align: center; color: #888">
-              — OR —
-            </div>
-
-            <div class="control-group">
-              <label for="arxiv-html-paste"
-                >Paste HTML Source (from View Source)</label
-              >
-              <textarea
-                id="arxiv-html-paste"
-                placeholder="Paste full HTML source here (Ctrl+U / Cmd+Option+U → Select All → Copy)"
-                style="
-                  width: 100%;
-                  min-height: 150px;
-                  padding: 0.5rem;
-                  border: 1px solid #ccc;
-                  border-radius: 4px;
-                  font-family: monospace;
-                  font-size: 0.85rem;
-                  resize: vertical;
-                "
-              ></textarea>
-              <button
-                id="load-arxiv-paste-btn"
-                class="apply-css-btn"
-                style="margin-top: 0.5rem"
-              >
-                Load from HTML
-              </button>
-            </div>
-
-            <div id="arxiv-info" class="file-info hidden"></div>
-          </div>
-        </div>
-        <!-- End Arxiv Mode Sections -->
-
-        <!-- Shared Settings (work for both EPUB and Arxiv modes) -->
+        <!-- Typography -->
         <div class="settings-section collapsed">
           <h2 class="collapsible">
             Typography <span class="collapse-icon">▼</span>
@@ -181,6 +77,7 @@
           </div>
         </div>
 
+        <!-- Image Quality -->
         <div class="settings-section collapsed">
           <h2 class="collapsible">
             Image Quality <span class="collapse-icon">▼</span>
@@ -202,6 +99,7 @@
           </div>
         </div>
 
+        <!-- Output Format -->
         <div class="settings-section collapsed">
           <h2 class="collapsible">
             Output Format <span class="collapse-icon">▼</span>
@@ -291,40 +189,7 @@
           </div>
         </div>
 
-        <div class="settings-section collapsed">
-          <h2 class="collapsible">
-            Export Limits (Testing) <span class="collapse-icon">▼</span>
-          </h2>
-          <div class="section-content">
-            <div class="control-group">
-              <label for="limit-type">Limit by</label>
-              <select id="limit-type">
-                <option value="none">No limit (full book)</option>
-                <option value="pages">Number of pages</option>
-                <option value="chapters">Number of chapters</option>
-              </select>
-            </div>
-
-            <div
-              class="control-group"
-              id="limit-value-group"
-              style="display: none"
-            >
-              <label for="limit-value"
-                >Limit to: <span id="limit-value-display">1</span></label
-              >
-              <input
-                type="range"
-                id="limit-value"
-                min="1"
-                max="10"
-                value="1"
-                step="1"
-              />
-            </div>
-          </div>
-        </div>
-
+        <!-- Custom CSS -->
         <div class="settings-section collapsed">
           <h2 class="collapsible">
             Custom CSS <span class="collapse-icon">▼</span>
@@ -340,101 +205,7 @@ h1 { margin-top: 2em; }"
           </div>
         </div>
 
-        <div class="settings-section collapsed">
-          <h2 class="collapsible">
-            Bilingual Translation
-            <span
-              style="
-                color: #cc0000;
-                font-size: 0.7rem;
-                margin-left: 0.5rem;
-                font-weight: 600;
-              "
-              >WIP</span
-            >
-            <span class="collapse-icon">▼</span>
-          </h2>
-          <div class="section-content">
-            <div class="control-group">
-              <label>
-                <input type="checkbox" id="enable-translation" />
-                Enable bilingual mode (interleaved original + translated pages)
-              </label>
-              <small style="color: #888; display: block; margin-top: 4px">
-                Each original page will be followed by its translated version
-              </small>
-            </div>
-
-            <div class="control-group">
-              <label>Step 1: Export pages for translation</label>
-              <button id="export-for-translation-btn" class="apply-css-btn">
-                Export Text for Translation
-              </button>
-              <small style="color: #888; display: block; margin-top: 4px">
-                Exports simplified HTML in a marked text file. Translate
-                externally (e.g., Gemini) and re-import.
-              </small>
-            </div>
-
-            <div class="control-group">
-              <label>Step 2: Import both original and translated files</label>
-              <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem">
-                <button
-                  id="import-original-btn"
-                  class="apply-css-btn"
-                  style="flex: 1"
-                >
-                  1. Import Original
-                </button>
-                <button
-                  id="import-translation-btn"
-                  class="apply-css-btn"
-                  style="flex: 1"
-                >
-                  2. Import Translated
-                </button>
-              </div>
-              <input
-                type="file"
-                id="original-file-upload"
-                accept=".txt"
-                style="display: none"
-              />
-              <input
-                type="file"
-                id="translation-file-upload"
-                accept=".txt"
-                style="display: none"
-              />
-              <div id="original-import-status" class="file-info hidden"></div>
-              <div
-                id="translation-import-status"
-                class="file-info hidden"
-              ></div>
-              <small style="color: #888; display: block; margin-top: 4px">
-                Import both files (can be edited/partial). Pages will be matched
-                by page number.
-              </small>
-            </div>
-
-            <div class="control-group">
-              <label for="translation-target-lang"
-                >Target language code (for filename)</label
-              >
-              <input
-                type="text"
-                id="translation-target-lang"
-                placeholder="en"
-                value="en"
-                style="width: 100px"
-              />
-              <small style="color: #888; display: block; margin-top: 4px">
-                Used in filename: book-de-en.xtc
-              </small>
-            </div>
-          </div>
-        </div>
-
+        <!-- Convert Button -->
         <div class="settings-section">
           <button id="convert-btn" class="convert-btn" disabled>
             Convert & Export
@@ -452,7 +223,7 @@ h1 { margin-top: 2em; }"
       <main class="preview-panel">
         <div class="preview-header">
           <div class="chapter-info">
-            <h2 id="chapter-title">No EPUB loaded</h2>
+            <h2 id="chapter-title">Loading...</h2>
             <p id="page-info" class="page-info"></p>
           </div>
           <div class="preview-tabs">
@@ -465,7 +236,7 @@ h1 { margin-top: 2em; }"
         </div>
 
         <div class="preview-container">
-          <div class="preview-column" data-preview="actual-size">
+          <div class="preview-column active" data-preview="actual-size">
             <h3 class="preview-title">Actual Screen Size (5.5cm × 9cm)</h3>
             <div class="calibration-control">
               <label
@@ -494,7 +265,7 @@ h1 { margin-top: 2em; }"
             <h3 class="preview-title">Image Preview</h3>
             <div id="preview-viewport" class="preview-viewport">
               <div class="preview-placeholder">
-                <p>Upload an EPUB file to preview</p>
+                <p>Loading articles...</p>
               </div>
             </div>
           </div>
@@ -511,7 +282,7 @@ h1 { margin-top: 2em; }"
         <div class="preview-controls">
           <div class="nav-group">
             <button id="prev-chapter-btn" class="nav-btn" disabled>
-              ← Prev Chapter
+              ← Prev Article
             </button>
             <button id="prev-page-btn" class="nav-btn" disabled>
               ← Prev Page
@@ -522,7 +293,7 @@ h1 { margin-top: 2em; }"
               Next Page →
             </button>
             <button id="next-chapter-btn" class="nav-btn" disabled>
-              Next Chapter →
+              Next Article →
             </button>
           </div>
         </div>
@@ -533,28 +304,14 @@ h1 { margin-top: 2em; }"
     <div id="virtual-device" class="virtual-device"></div>
 
     <!-- Scripts -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="js/html2canvas.min.js"></script>
+    <script src="jszip.min.js"></script>
+    <script src="../js/html2canvas.min.js"></script>
 
     <!-- Hyphenopoly Configuration -->
-    <script>
-      var Hyphenopoly = {
-        require: {
-          "en-us": "FORCEHYPHENOPOLY",
-        },
-        setup: {
-          selectors: {
-            "#virtual-device p": {},
-          },
-        },
-        paths: {
-          patterndir: "js/patterns/",
-          maindir: "js/",
-        },
-      };
-    </script>
-    <script src="js/Hyphenopoly_Loader.js"></script>
+    <script src="hyphenopoly-config.js"></script>
+    <script src="../js/Hyphenopoly_Loader.js"></script>
 
-    <script type="module" src="js/main.js"></script>
+    <!-- Extension-specific converter logic -->
+    <script type="module" src="converter.js"></script>
   </body>
 </html>

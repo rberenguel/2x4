@@ -91,21 +91,28 @@ export class Paginator {
    * @returns {number} Number of pages in this chapter
    */
   async loadChapter(html, chapterIndex) {
+    console.log("paginator.loadChapter: start, html length =", html?.length);
     this.currentChapterIndex = chapterIndex;
     this.currentPageIndex = 0;
 
     // Apply settings
     this.applySettings();
+    console.log("paginator.loadChapter: settings applied");
 
     // Inject content
     this.container.innerHTML = html;
+    console.log("paginator.loadChapter: content injected");
 
     // Wait for images and fonts to load
+    console.log("paginator.loadChapter: waiting for content to load...");
     await this.waitForContentLoad();
+    console.log("paginator.loadChapter: content loaded");
 
     // Trigger hyphenation
     if (window.Hyphenopoly && window.Hyphenopoly.hyphenators) {
+      console.log("paginator.loadChapter: running hyphenation...");
       await window.Hyphenopoly.hyphenators["en-us"](this.container);
+      console.log("paginator.loadChapter: hyphenation done");
     }
 
     // Calculate page count
@@ -113,6 +120,14 @@ export class Paginator {
     const containerWidth = this.container.scrollWidth;
     const pageWidth = this.contentWidth + this.padding * 2;
     this.pageCount = Math.ceil(containerWidth / pageWidth);
+    console.log(
+      "paginator.loadChapter: pageCount =",
+      this.pageCount,
+      "containerWidth =",
+      containerWidth,
+      "pageWidth =",
+      pageWidth,
+    );
 
     // Store chapter info
     if (!this.chapters[chapterIndex]) {
@@ -122,7 +137,9 @@ export class Paginator {
     this.chapters[chapterIndex].html = html;
 
     // Update preview
+    console.log("paginator.loadChapter: updating preview...");
     this.updatePreview();
+    console.log("paginator.loadChapter: preview updated");
 
     return this.pageCount;
   }
@@ -134,15 +151,46 @@ export class Paginator {
   async waitForContentLoad() {
     // Wait for images
     const images = this.container.querySelectorAll("img");
-    const imagePromises = Array.from(images).map((img) => {
-      if (img.complete) return Promise.resolve();
-      return new Promise((resolve) => {
-        img.onload = resolve;
-        img.onerror = resolve; // Continue even if image fails
-      });
+    console.log("waitForContentLoad: found", images.length, "images");
+
+    const imagePromises = Array.from(images).map((img, index) => {
+      // Data URIs are embedded and load synchronously - no need to wait
+      if (img.src && img.src.startsWith("data:")) {
+        console.log(
+          "waitForContentLoad: image",
+          index,
+          "is data URI, skipping wait",
+        );
+        return Promise.resolve();
+      }
+
+      if (img.complete) {
+        console.log("waitForContentLoad: image", index, "already complete");
+        return Promise.resolve();
+      }
+
+      return Promise.race([
+        new Promise((resolve) => {
+          img.onload = () => {
+            console.log("waitForContentLoad: image", index, "loaded");
+            resolve();
+          };
+          img.onerror = (e) => {
+            console.log("waitForContentLoad: image", index, "error", e);
+            resolve(); // Continue even if image fails
+          };
+        }),
+        new Promise((resolve) => {
+          setTimeout(() => {
+            console.log("waitForContentLoad: image", index, "timeout after 5s");
+            resolve();
+          }, 5000); // 5 second timeout per image
+        }),
+      ]);
     });
 
     await Promise.all(imagePromises);
+    console.log("waitForContentLoad: all images done");
 
     // Wait for fonts
     if (document.fonts) {
@@ -307,7 +355,11 @@ export class Paginator {
    * @param {number} maxHeight - Target height in pixels (default 800)
    * @returns {Promise<Object>} - {scaledElement, finalFontSize}
    */
-  async loadTranslatedPageWithScaling(translatedHTML, baseFontSize, maxHeight = 800) {
+  async loadTranslatedPageWithScaling(
+    translatedHTML,
+    baseFontSize,
+    maxHeight = 800,
+  ) {
     const minFontSize = 10;
     const maxIterations = 10;
     let currentFontSize = baseFontSize;
@@ -327,7 +379,7 @@ export class Paginator {
       if (actualHeight <= maxHeight || currentFontSize <= minFontSize) {
         return {
           scaledElement: this.getCurrentPageElement(),
-          finalFontSize: currentFontSize
+          finalFontSize: currentFontSize,
         };
       }
 
@@ -338,7 +390,7 @@ export class Paginator {
     // Fallback to minimum
     return {
       scaledElement: this.getCurrentPageElement(),
-      finalFontSize: minFontSize
+      finalFontSize: minFontSize,
     };
   }
 

@@ -102,17 +102,47 @@ export class Renderer {
   /**
    * Public: Returns a Canvas (for XTH Encoder)
    */
-  async renderPageToCanvas(pageElement, fontFamily, styles = {}) {
+  async renderPageToCanvas(
+    pageElement,
+    fontFamily,
+    styles = {},
+    progressInfo = null,
+  ) {
     const highResCanvas = await this._renderToHighResCanvas(pageElement);
-    return this.downscaleCanvas(highResCanvas);
+    const finalCanvas = this.downscaleCanvas(highResCanvas);
+
+    // Add progress bars if requested
+    if (progressInfo) {
+      this.drawProgressBars(
+        finalCanvas,
+        progressInfo.chapterProgress,
+        progressInfo.bookProgress,
+      );
+    }
+
+    return finalCanvas;
   }
 
   /**
    * Public: Returns a JPEG Blob (for ZIP/EPUB)
    */
-  async renderPageToImage(pageElement, fontFamily, styles = {}) {
+  async renderPageToImage(
+    pageElement,
+    fontFamily,
+    styles = {},
+    progressInfo = null,
+  ) {
     const highResCanvas = await this._renderToHighResCanvas(pageElement);
     const finalCanvas = this.downscaleCanvas(highResCanvas);
+
+    // Add progress bars if requested
+    if (progressInfo) {
+      this.drawProgressBars(
+        finalCanvas,
+        progressInfo.chapterProgress,
+        progressInfo.bookProgress,
+      );
+    }
 
     return new Promise((resolve, reject) => {
       finalCanvas.toBlob(
@@ -132,5 +162,42 @@ export class Renderer {
       data[i] = data[i + 1] = data[i + 2] = gray;
     }
     ctx.putImageData(imageData, 0, 0);
+  }
+
+  /**
+   * Draw progress bars at the top of the canvas
+   * @param {HTMLCanvasElement} canvas - The 480×800 canvas to draw on
+   * @param {number} chapterProgress - Progress through current chapter (0.0 to 1.0)
+   * @param {number} bookProgress - Progress through entire book (0.0 to 1.0)
+   */
+  drawProgressBars(canvas, chapterProgress, bookProgress) {
+    console.log(
+      "drawProgressBars called - canvas:",
+      canvas.width,
+      "x",
+      canvas.height,
+      "chapter:",
+      chapterProgress,
+      "book:",
+      bookProgress,
+    );
+
+    const ctx = canvas.getContext("2d");
+    const barHeight = 2; // 2px at final resolution (480×800)
+
+    // Book progress bar (top) - lighter gray
+    ctx.fillStyle = "#586e75"; // Solarized base01 (gray)
+    ctx.fillRect(0, 0, canvas.width * bookProgress, barHeight);
+
+    // Chapter progress bar (directly below, no gap) - darker gray
+    ctx.fillStyle = "#073642"; // Solarized base02 (darker)
+    ctx.fillRect(0, barHeight, canvas.width * chapterProgress, barHeight);
+
+    console.log(
+      "Progress bars drawn - book bar width:",
+      canvas.width * bookProgress,
+      "chapter bar width:",
+      canvas.width * chapterProgress,
+    );
   }
 }

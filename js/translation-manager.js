@@ -5,8 +5,8 @@
 
 export class TranslationManager {
   constructor() {
-    this.pageMarker = '=== PAGE {number} ===';
-    this.chapterMarker = '### CHAPTER {number}: {title} ###';
+    this.pageMarker = "=== PAGE {number} ===";
+    this.chapterMarker = "### CHAPTER {number}: {title} ###";
   }
 
   /**
@@ -16,10 +16,10 @@ export class TranslationManager {
    * @returns {Blob} - Text file blob
    */
   exportPagesToText(pages, metadata) {
-    let output = 'BILINGUAL TRANSLATION FILE\n';
-    output += `Book: ${metadata.title || 'Unknown'}\n`;
-    output += `Author: ${metadata.creator || 'Unknown'}\n`;
-    output += `Original Language: ${metadata.language || 'unknown'}\n`;
+    let output = "BILINGUAL TRANSLATION FILE\n";
+    output += `Book: ${metadata.title || "Unknown"}\n`;
+    output += `Author: ${metadata.creator || "Unknown"}\n`;
+    output += `Original Language: ${metadata.language || "unknown"}\n`;
     output += `Target Language: [TO BE FILLED]\n`;
     output += `Generated: ${new Date().toISOString()}\n`;
     output += `Instructions: Translate HTML between markers. Keep tags intact.\n`;
@@ -39,7 +39,7 @@ export class TranslationManager {
       output += `${page.html}\n\n`;
     }
 
-    return new Blob([output], { type: 'text/plain;charset=utf-8' });
+    return new Blob([output], { type: "text/plain;charset=utf-8" });
   }
 
   /**
@@ -52,7 +52,8 @@ export class TranslationManager {
 
     // Regex to match page markers and extract content
     // Captures: page number and content until next marker or end
-    const pageRegex = /=== PAGE (\d+) ===\n([\s\S]*?)(?=\n=== PAGE \d+ ===|\n### CHAPTER|$)/g;
+    const pageRegex =
+      /=== PAGE (\d+) ===\n([\s\S]*?)(?=\n=== PAGE \d+ ===|\n### CHAPTER|$)/g;
 
     let match;
     while ((match = pageRegex.exec(text)) !== null) {
@@ -75,23 +76,27 @@ export class TranslationManager {
    */
   validateTranslationFile(text, expectedPageCount) {
     // Check for basic file structure
-    if (!text.includes('BILINGUAL TRANSLATION FILE')) {
-      throw new Error('Invalid translation file format - missing header');
+    if (!text.includes("BILINGUAL TRANSLATION FILE")) {
+      throw new Error("Invalid translation file format - missing header");
     }
 
-    if (!text.includes('=== PAGE')) {
-      throw new Error('Invalid translation file format - no page markers found');
+    if (!text.includes("=== PAGE")) {
+      throw new Error(
+        "Invalid translation file format - no page markers found",
+      );
     }
 
     const pageMap = this.parseTranslationFile(text);
 
     // Check page count
     if (pageMap.size === 0) {
-      throw new Error('No translated pages found in file');
+      throw new Error("No translated pages found in file");
     }
 
     if (pageMap.size !== expectedPageCount) {
-      throw new Error(`Expected ${expectedPageCount} pages, found ${pageMap.size}`);
+      throw new Error(
+        `Expected ${expectedPageCount} pages, found ${pageMap.size}`,
+      );
     }
 
     // Check for sequential page numbers
@@ -99,14 +104,16 @@ export class TranslationManager {
     for (let i = 0; i < pageNumbers.length; i++) {
       const expected = i + 1;
       if (pageNumbers[i] !== expected) {
-        throw new Error(`Missing or out-of-order page number. Expected ${expected}, found ${pageNumbers[i]}`);
+        throw new Error(
+          `Missing or out-of-order page number. Expected ${expected}, found ${pageNumbers[i]}`,
+        );
       }
     }
 
     // Check for duplicate page numbers
     const uniquePages = new Set(pageNumbers);
     if (uniquePages.size !== pageNumbers.length) {
-      throw new Error('Duplicate page numbers found in file');
+      throw new Error("Duplicate page numbers found in file");
     }
   }
 }

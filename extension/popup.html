@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>2X4 Reading Queue</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>Reading Queue</h1>
+        <div id="queue-stats" class="stats">
+          <span id="article-count">0 articles</span>
+          <span id="reading-time">0 min read</span>
+        </div>
+      </header>
+
+      <div class="actions">
+        <button id="add-current" class="btn btn-primary">
+          <span>📄</span>
+          Add Current Page
+        </button>
+      </div>
+
+      <div id="queue-container" class="queue-container">
+        <div id="empty-state" class="empty-state">
+          <p>No articles in queue</p>
+          <p class="hint">
+            Click "Add Current Page" to start building your reading list
+          </p>
+        </div>
+
+        <ul id="queue-list" class="queue-list"></ul>
+      </div>
+
+      <footer>
+        <button id="open-in-2x4" class="btn btn-success" disabled>
+          <span>🚀</span>
+          Open in 2X4
+        </button>
+        <button id="clear-queue" class="btn btn-danger" disabled>
+          <span>🗑️</span>
+          Clear All
+        </button>
+      </footer>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

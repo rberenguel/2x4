@@ -1,17 +1,33 @@
 {
-  "name": "2X4",
-  "short_name": "2X4",
-  "version": "0.1.0",
-  "description": "Convert EPUB and Arxiv papers to images for Xteink X4 e-readers",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#fdf6e3",
-  "theme_color": "#268bd2",
-  "icons": [
+  "manifest_version": 3,
+  "name": "2X4 Article Extractor",
+  "version": "1.0.0",
+  "description": "Extract web articles into a reading queue for offline XTC conversion on Xteink X4 e-readers",
+  "permissions": ["activeTab", "storage", "scripting"],
+  "host_permissions": ["<all_urls>"],
+  "action": {
+    "default_title": "Manage Reading Queue",
+    "default_popup": "extension/popup.html"
+  },
+  "background": {
+    "service_worker": "extension/background.js"
+  },
+  "icons": {
+    "16": "extension/icons/icon-16.png",
+    "48": "extension/icons/icon-48.png",
+    "128": "extension/icons/icon-128.png"
+  },
+  "web_accessible_resources": [
     {
-      "src": "icon.png",
-      "sizes": "512x512",
-      "type": "image/png"
+      "resources": [
+        "extension/converter.html",
+        "js/*",
+        "css/*",
+        "fonts/*",
+        "icons/*",
+        "favicon.ico"
+      ],
+      "matches": ["<all_urls>"]
     }
   ]
 }

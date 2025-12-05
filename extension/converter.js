@@ -1,0 +1,634 @@
+/**
+ * Extension Converter
+ * Reuses PWA code but loads queue from chrome.storage automatically
+ */
+
+// Import all PWA modules (paths relative to parent directory)
+import { ArticleParser } from "../js/article-parser.js";
+import { XTHEncoder } from "../js/xth-encoder.js";
+import { XTCBuilder } from "../js/xtc-builder.js";
+import { FontEmbedder } from "../js/font-embed.js";
+import { Paginator } from "../js/paginator.js";
+import { Renderer } from "../js/renderer.js";
+import { EPUBBuilder } from "../js/epub-builder.js";
+import { ConversionPipeline } from "../js/conversion-pipeline.js";
+import { ConversionController } from "../js/conversion-controller.js";
+
+class ExtensionConverter {
+  constructor() {
+    this.articleParser = new ArticleParser();
+    this.fontEmbedder = new FontEmbedder();
+    this.paginator = new Paginator("#virtual-device");
+    this.renderer = new Renderer(this.fontEmbedder);
+    this.epubBuilder = new EPUBBuilder();
+    this.xthEncoder = new XTHEncoder();
+    this.xtcBuilder = new XTCBuilder();
+
+    this.isConverting = false;
+    this.currentChapterIndex = 0;
+
+    this.initializeUI();
+
+    // Create conversion pipeline and controller
+    this.conversionPipeline = new ConversionPipeline({
+      parser: this.articleParser,
+      paginator: this.paginator,
+      renderer: this.renderer,
+      xthEncoder: this.xthEncoder,
+      xtcBuilder: this.xtcBuilder,
+      epubBuilder: this.epubBuilder,
+    });
+
+    this.conversionController = new ConversionController(
+      this.conversionPipeline,
+      {
+        convertBtn: this.elements.convertBtn,
+        progressBar: this.elements.progressFill,
+        progressText: this.elements.progressText,
+        progressContainer: this.elements.progressContainer,
+      },
+    );
+
+    this.attachEventListeners();
+    this.initializeCollapsibleSections();
+    this.initializePreviewTabs();
+    this.loadQueueFromStorage();
+    this.loadCalibrationScale();
+  }
+
+  initializeUI() {
+    this.elements = {
+      // Queue info
+      queueStatus: document.getElementById("queue-status"),
+
+      // Typography
+      fontFamily: document.getElementById("font-family"),
+      fontSize: document.getElementById("font-size"),
+      fontSizeValue: document.getElementById("font-size-value"),
+      lineHeight: document.getElementById("line-height"),
+      lineHeightValue: document.getElementById("line-height-value"),
+
+      // Image quality
+      jpegQuality: document.getElementById("jpeg-quality"),
+      jpegQualityValue: document.getElementById("jpeg-quality-value"),
+
+      // Output format
+      outputFormat: document.getElementById("output-format"),
+      xtcSplitSettings: document.getElementById("xtc-split-settings"),
+      xtcFilenameSettings: document.getElementById("xtc-filename-settings"),
+      xtcSplitPages: document.getElementById("xtc-split-pages"),
+      xtcSplitValue: document.getElementById("xtc-split-value"),
+      xtcFilenamePattern: document.getElementById("xtc-filename-pattern"),
+
+      // Custom CSS
+      customCSS: document.getElementById("custom-css"),
+      applyCSSBtn: document.getElementById("apply-css-btn"),
+
+      // Progress bars
+      enableProgressBars: document.getElementById("enable-progress-bars"),
+
+      // Convert
+      convertBtn: document.getElementById("convert-btn"),
+      progressContainer: document.getElementById("progress-container"),
+      progressFill: document.getElementById("progress-fill"),
+      progressText: document.getElementById("progress-text"),
+
+      // Preview
+      chapterTitle: document.getElementById("chapter-title"),
+      pageInfo: document.getElementById("page-info"),
+      htmlPreviewViewport: document.getElementById("html-preview-viewport"),
+      prevChapterBtn: document.getElementById("prev-chapter-btn"),
+      prevPageBtn: document.getElementById("prev-page-btn"),
+      nextPageBtn: document.getElementById("next-page-btn"),
+      nextChapterBtn: document.getElementById("next-chapter-btn"),
+
+      // Preview tabs & viewports
+      previewViewport: document.getElementById("preview-viewport"),
+      actualSizeViewport: document.getElementById("actual-size-viewport"),
+      sizeCalibration: document.getElementById("size-calibration"),
+      sizeCalibrationValue: document.getElementById("size-calibration-value"),
+    };
+
+    // Update output format UI
+    this.updateOutputFormatUI();
+  }
+
+  attachEventListeners() {
+    // Typography
+    this.elements.fontFamily.addEventListener("change", () => {
+      this.updatePaginatorSettings();
+    });
+    this.elements.fontSize.addEventListener("input", (e) => {
+      this.elements.fontSizeValue.textContent = e.target.value;
+      this.debouncedUpdatePaginatorSettings();
+    });
+    this.elements.lineHeight.addEventListener("input", (e) => {
+      this.elements.lineHeightValue.textContent = e.target.value;
+      this.debouncedUpdatePaginatorSettings();
+    });
+
+    // Image quality
+    this.elements.jpegQuality.addEventListener("input", (e) => {
+      this.elements.jpegQualityValue.textContent = e.target.value;
+    });
+
+    // Output format
+    this.elements.outputFormat.addEventListener("change", () =>
+      this.updateOutputFormatUI(),
+    );
+    this.elements.xtcSplitPages.addEventListener("input", (e) => {
+      const value = parseInt(e.target.value);
+      this.elements.xtcSplitValue.textContent =
+        value === 0 ? "No split" : `${value} pages each`;
+    });
+
+    // Custom CSS
+    this.elements.applyCSSBtn.addEventListener("click", () => {
+      this.updatePaginatorSettings();
+    });
+
+    // Progress bars
+    this.elements.enableProgressBars.addEventListener("change", () => {
+      this.handleProgressBarsToggle();
+    });
+
+    // Convert
+    this.elements.convertBtn.addEventListener("click", () => {
+      this.startConversion();
+    });
+
+    // Navigation
+    this.elements.prevChapterBtn.addEventListener("click", () =>
+      this.prevChapter(),
+    );
+    this.elements.prevPageBtn.addEventListener("click", () => this.prevPage());
+    this.elements.nextPageBtn.addEventListener("click", () => this.nextPage());
+    this.elements.nextChapterBtn.addEventListener("click", () =>
+      this.nextChapter(),
+    );
+
+    // Size calibration
+    this.elements.sizeCalibration.addEventListener("input", (e) => {
+      const scale = e.target.value;
+      this.elements.sizeCalibrationValue.textContent = scale;
+      this.elements.actualSizeViewport.style.transform = `scale(${scale / 100})`;
+      localStorage.setItem("calibrationScale", scale);
+    });
+  }
+
+  initializeCollapsibleSections() {
+    const collapsibles = document.querySelectorAll(".collapsible");
+    collapsibles.forEach((header) => {
+      header.addEventListener("click", () => {
+        const section = header.closest(".settings-section");
+        section.classList.toggle("collapsed");
+      });
+    });
+  }
+
+  initializePreviewTabs() {
+    const tabs = document.querySelectorAll(".preview-tab");
+    const columns = document.querySelectorAll(".preview-column");
+
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        const previewType = tab.dataset.preview;
+
+        // Update active tab
+        tabs.forEach((t) => t.classList.remove("active"));
+        tab.classList.add("active");
+
+        // Update visible column
+        columns.forEach((col) => {
+          if (col.dataset.preview === previewType) {
+            col.classList.add("active");
+          } else {
+            col.classList.remove("active");
+          }
+        });
+      });
+    });
+  }
+
+  loadCalibrationScale() {
+    const savedScale = localStorage.getItem("calibrationScale");
+    if (savedScale) {
+      this.elements.sizeCalibration.value = savedScale;
+      this.elements.sizeCalibrationValue.textContent = savedScale;
+      this.elements.actualSizeViewport.style.transform = `scale(${savedScale / 100})`;
+    }
+  }
+
+  updateOutputFormatUI() {
+    const format = this.elements.outputFormat.value;
+    const isXTC = format === "xtc";
+
+    this.elements.xtcSplitSettings.style.display = isXTC ? "block" : "none";
+    this.elements.xtcFilenameSettings.style.display = isXTC ? "block" : "none";
+  }
+
+  async loadQueueFromStorage() {
+    try {
+      const result = await chrome.storage.local.get("articleQueue");
+      const queue = result.articleQueue || [];
+
+      if (queue.length === 0) {
+        this.elements.queueStatus.textContent = "No articles in queue";
+        this.elements.queueStatus.style.color = "#dc322f";
+        return;
+      }
+
+      // Create queue data structure
+      const queueData = {
+        version: "1.0",
+        type: "article-queue",
+        timestamp: Date.now(),
+        metadata: {
+          title:
+            queue.length === 1
+              ? queue[0].title
+              : `Reading Queue (${queue.length} articles)`,
+          creator: "Web Articles",
+          language: queue[0]?.lang || "en",
+        },
+        articles: queue,
+      };
+
+      // Load into article parser
+      await this.articleParser.loadFromData(queueData);
+
+      // Update UI
+      const wordCount = this.articleParser.getTotalWordCount();
+      const readingTime = Math.ceil(wordCount / 200);
+      this.elements.queueStatus.innerHTML = `
+        <strong>${queue.length} article${queue.length > 1 ? "s" : ""}</strong><br>
+        ${wordCount.toLocaleString()} words • ~${readingTime} min read
+      `;
+      this.elements.queueStatus.style.color = "";
+
+      // Enable convert button
+      this.elements.convertBtn.disabled = false;
+
+      // Apply initial settings
+      this.updatePaginatorSettings();
+
+      // Load first article
+      await this.loadChapter(0);
+    } catch (error) {
+      console.error("Error loading queue:", error);
+      this.elements.queueStatus.textContent = `Error: ${error.message}`;
+      this.elements.queueStatus.style.color = "#dc322f";
+    }
+  }
+
+  debouncedUpdatePaginatorSettings() {
+    if (this.settingsDebounceTimer) {
+      clearTimeout(this.settingsDebounceTimer);
+    }
+    this.settingsDebounceTimer = setTimeout(() => {
+      this.updatePaginatorSettings();
+    }, 500);
+  }
+
+  updatePaginatorSettings() {
+    const settings = {
+      fontFamily: this.elements.fontFamily.value,
+      fontSize: parseInt(this.elements.fontSize.value),
+      lineHeight: parseFloat(this.elements.lineHeight.value),
+      customCSS: this.elements.customCSS.value,
+    };
+
+    this.paginator.updateSettings(settings);
+
+    // Reload current chapter if loaded
+    if (this.articleParser.articles.length > 0) {
+      this.loadChapter(this.currentChapterIndex);
+    }
+  }
+
+  async loadChapter(chapterIndex) {
+    try {
+      this.currentChapterIndex = chapterIndex;
+
+      const html = await this.articleParser.getChapterContent(chapterIndex);
+      await this.paginator.loadChapter(html, chapterIndex);
+
+      this.updateChapterInfo();
+      this.updateNavigationButtons();
+      await this.updateImagePreview();
+      this.updateActualSizePreview();
+    } catch (error) {
+      console.error("Error loading chapter:", error);
+    }
+  }
+
+  async updateImagePreview() {
+    this.elements.previewViewport.innerHTML =
+      '<div class="preview-placeholder"><p>Rendering...</p></div>';
+
+    try {
+      const pageElement = this.paginator.getCurrentPageElement();
+      const settings = {
+        fontFamily: this.elements.fontFamily.value,
+        fontSize: parseInt(this.elements.fontSize.value),
+        lineHeight: parseFloat(this.elements.lineHeight.value),
+        customCSS: this.elements.customCSS.value,
+      };
+
+      // Set JPEG quality on renderer
+      this.renderer.setJPEGQuality(
+        parseInt(this.elements.jpegQuality.value) / 100,
+      );
+
+      // Calculate progress info if enabled
+      let progressInfo = null;
+      if (this.elements.enableProgressBars.checked && this.pageMap) {
+        const currentPageIndex = this.paginator.currentPageIndex;
+        const currentPageInfo = this.pageMap[this.currentChapterIndex];
+        // Progress at START of page (0-indexed), so page 0 = 0%, page 1 = 1/total, etc.
+        const chapterProgress = currentPageIndex / currentPageInfo.pageCount;
+        const bookProgress =
+          (currentPageInfo.startPage - 1 + currentPageIndex) / this.totalPages;
+        progressInfo = { chapterProgress, bookProgress };
+      }
+
+      const blob = await this.renderer.renderPageToImage(
+        pageElement,
+        settings.fontFamily,
+        settings,
+        progressInfo,
+      );
+      const url = URL.createObjectURL(blob);
+
+      this.elements.previewViewport.innerHTML = `<img src="${url}" style="width: 100%; height: 100%; object-fit: contain;" />`;
+    } catch (error) {
+      console.error("Error updating image preview:", error);
+      this.elements.previewViewport.innerHTML = `<div class="preview-placeholder"><p>Error: ${error.message}</p></div>`;
+    }
+  }
+
+  updateActualSizePreview() {
+    this.elements.actualSizeViewport.innerHTML =
+      '<div class="preview-placeholder"><p>Rendering...</p></div>';
+
+    try {
+      const pageElement = this.paginator.getCurrentPageElement();
+
+      // Just show the HTML directly in actual size viewport
+      // The actual-size class already handles the 5.5cm × 9cm sizing
+      const img = document.createElement("img");
+      img.style.width = "100%";
+      img.style.height = "100%";
+      img.style.objectFit = "contain";
+
+      // Reuse the blob from image preview if available
+      const existingImg = this.elements.previewViewport.querySelector("img");
+      if (existingImg && existingImg.src) {
+        img.src = existingImg.src;
+        this.elements.actualSizeViewport.innerHTML = "";
+        this.elements.actualSizeViewport.appendChild(img);
+      } else {
+        // Fallback: render again
+        this.renderer
+          .renderPageToImage(pageElement, this.elements.fontFamily.value, {})
+          .then((blob) => {
+            img.src = URL.createObjectURL(blob);
+            this.elements.actualSizeViewport.innerHTML = "";
+            this.elements.actualSizeViewport.appendChild(img);
+          });
+      }
+    } catch (error) {
+      console.error("Error updating actual size preview:", error);
+      this.elements.actualSizeViewport.innerHTML = `<div class="preview-placeholder"><p>Error</p></div>`;
+    }
+  }
+
+  updateChapterInfo() {
+    const title = this.articleParser.getChapterTitle(this.currentChapterIndex);
+    const pageInfo = this.paginator.getPageInfo();
+
+    this.elements.chapterTitle.textContent = title;
+    this.elements.pageInfo.textContent = `Article ${this.currentChapterIndex + 1}/${this.articleParser.articles.length} • Page ${pageInfo.currentPage}/${pageInfo.totalPages}`;
+  }
+
+  updateNavigationButtons() {
+    const pageInfo = this.paginator.getPageInfo();
+    const totalChapters = this.articleParser.articles.length;
+
+    this.elements.prevPageBtn.disabled = !pageInfo.hasPrevPage;
+    this.elements.nextPageBtn.disabled = !pageInfo.hasNextPage;
+    this.elements.prevChapterBtn.disabled = this.currentChapterIndex === 0;
+    this.elements.nextChapterBtn.disabled =
+      this.currentChapterIndex >= totalChapters - 1;
+  }
+
+  async prevPage() {
+    if (this.paginator.prevPage()) {
+      this.updateChapterInfo();
+      this.updateNavigationButtons();
+      await this.updateImagePreview();
+      this.updateActualSizePreview();
+    }
+  }
+
+  async nextPage() {
+    if (this.paginator.nextPage()) {
+      this.updateChapterInfo();
+      this.updateNavigationButtons();
+      await this.updateImagePreview();
+      this.updateActualSizePreview();
+    }
+  }
+
+  async prevChapter() {
+    if (this.currentChapterIndex > 0) {
+      await this.loadChapter(this.currentChapterIndex - 1);
+    }
+  }
+
+  async nextChapter() {
+    if (this.currentChapterIndex < this.articleParser.articles.length - 1) {
+      await this.loadChapter(this.currentChapterIndex + 1);
+    }
+  }
+
+  updateProgress(text, percentage) {
+    this.elements.progressText.textContent = text;
+    this.elements.progressFill.style.width = `${percentage}%`;
+  }
+
+  /**
+   * Handle progress bars toggle
+   */
+  async handleProgressBarsToggle() {
+    if (
+      this.elements.enableProgressBars.checked &&
+      this.articleParser.articles.length > 0
+    ) {
+      // Save current position
+      const savedChapterIndex = this.currentChapterIndex;
+      const savedPageIndex = this.paginator.currentPageIndex;
+
+      // Trigger pre-pagination
+      await this.prePaginateAll();
+
+      // Restore position
+      await this.loadChapter(savedChapterIndex);
+      this.paginator.goToPage(savedPageIndex);
+      this.updateNavigationButtons();
+      await this.updateImagePreview();
+      this.updateActualSizePreview();
+    } else {
+      this.pageMap = null;
+      this.totalPages = 0;
+
+      // Reload current chapter to update preview (remove progress bars)
+      if (this.articleParser.articles.length > 0) {
+        await this.loadChapter(this.currentChapterIndex);
+      }
+    }
+  }
+
+  /**
+   * Pre-paginate all chapters
+   */
+  async prePaginateAll() {
+    const totalChapters = this.articleParser.articles.length;
+    this.pageMap = [];
+    this.totalPages = 0;
+
+    this.elements.progressContainer.classList.remove("hidden");
+
+    for (let i = 0; i < totalChapters; i++) {
+      this.updateProgress(
+        `Analyzing chapter ${i + 1}/${totalChapters}... (${this.totalPages} pages found)`,
+        ((i + 1) / totalChapters) * 100,
+      );
+
+      const html = await this.articleParser.getChapterContent(i);
+      await this.paginator.loadChapter(html, i);
+      const pageCount = this.paginator.pageCount;
+
+      this.pageMap.push({
+        chapterIndex: i,
+        chapterTitle: this.articleParser.getChapterTitle(i),
+        pageCount,
+        startPage: this.totalPages + 1,
+        endPage: this.totalPages + pageCount,
+      });
+
+      this.totalPages += pageCount;
+    }
+
+    this.updateProgress(
+      `Analysis complete! Found ${this.totalPages} pages total.`,
+      100,
+    );
+    setTimeout(() => {
+      this.elements.progressContainer.classList.add("hidden");
+    }, 2000);
+  }
+
+  /**
+   * Prepare conversion options from UI state
+   * @returns {Object} Options object for ConversionPipeline
+   */
+  _prepareConversionOptions() {
+    const outputFormat = this.elements.outputFormat.value;
+
+    // Get metadata from article parser
+    const metadata = {
+      title:
+        this.articleParser.articles.length === 1
+          ? this.articleParser.articles[0].title
+          : `Reading Queue (${this.articleParser.articles.length} articles)`,
+      creator: "Web Articles",
+      language: this.articleParser.articles[0]?.lang || "en",
+    };
+
+    // Typography settings
+    const settings = {
+      fontFamily: this.elements.fontFamily.value,
+      fontSize: parseInt(this.elements.fontSize.value),
+      lineHeight: parseFloat(this.elements.lineHeight.value),
+      customCSS: this.elements.customCSS.value,
+    };
+
+    // Apply settings to paginator before conversion
+    this.paginator.updateSettings(settings);
+
+    // XTC-specific options
+    const xtcSplitPages =
+      outputFormat === "xtc" ? parseInt(this.elements.xtcSplitPages.value) : 0;
+    const xtcFilenamePattern =
+      outputFormat === "xtc"
+        ? this.elements.xtcFilenamePattern.value.trim()
+        : "";
+
+    // JPEG quality for image/epub output
+    const jpegQuality = parseInt(this.elements.jpegQuality.value) / 100;
+    this.renderer.setJPEGQuality(jpegQuality);
+
+    // Chapter source function
+    const getChapterContent = async (chapterIndex) => {
+      return await this.articleParser.getChapterContent(chapterIndex);
+    };
+
+    const getChapterTitle = (chapterIndex) => {
+      return this.articleParser.getChapterTitle(chapterIndex);
+    };
+
+    return {
+      format: outputFormat,
+      settings,
+      limits: {
+        type: "none",
+        value: 0,
+      },
+      xtc: {
+        splitPages: xtcSplitPages,
+        filenamePattern: xtcFilenamePattern,
+      },
+      jpegQuality,
+      metadata,
+      getChapterContent,
+      getChapterTitle,
+      totalChapters: this.articleParser.articles.length,
+      suppressChapterMarkers: false,
+      enableProgressBars: this.elements.enableProgressBars.checked,
+      pageMap: this.pageMap || null,
+      totalPages: this.totalPages || 0,
+    };
+  }
+
+  /**
+   * Start conversion process using the pipeline
+   */
+  async startConversion() {
+    if (this.articleParser.articles.length === 0 || this.isConverting) return;
+
+    this.isConverting = true;
+
+    try {
+      // Prepare conversion options
+      const options = this._prepareConversionOptions();
+
+      // Delegate to controller (which handles all UI updates)
+      await this.conversionController.start(options);
+    } catch (error) {
+      console.error("Conversion error:", error);
+      alert(`Conversion failed: ${error.message}`);
+    } finally {
+      this.isConverting = false;
+    }
+  }
+
+  sanitizeFilename(name) {
+    return name.replace(/[^a-z0-9]/gi, "_").toLowerCase();
+  }
+}
+
+// Initialize converter when page loads
+window.addEventListener("DOMContentLoaded", () => {
+  new ExtensionConverter();
+});
