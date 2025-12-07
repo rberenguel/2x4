@@ -7,7 +7,9 @@ let currentQueue = [];
 // DOM elements
 const elements = {
   addCurrent: document.getElementById("add-current"),
-  openIn2x4: document.getElementById("open-in-2x4"),
+  openEpub: document.getElementById("open-epub"),
+  openViewer: document.getElementById("open-viewer"),
+  openConverter: document.getElementById("open-converter"),
   clearQueue: document.getElementById("clear-queue"),
   queueList: document.getElementById("queue-list"),
   emptyState: document.getElementById("empty-state"),

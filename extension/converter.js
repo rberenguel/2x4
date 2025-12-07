@@ -179,6 +179,24 @@ class ExtensionConverter {
       this.elements.actualSizeViewport.style.transform = `scale(${scale / 100})`;
       localStorage.setItem("calibrationScale", scale);
     });
+
+    // Keyboard shortcut: 'v' to open viewer in new tab
+    document.addEventListener("keydown", (e) => {
+      // Only trigger if 'v' is pressed and we're not in a text input
+      if (e.key === 'v' || e.key === 'V') {
+        const activeElement = document.activeElement;
+        const isTextInput = activeElement && (
+          activeElement.tagName === 'INPUT' ||
+          activeElement.tagName === 'TEXTAREA' ||
+          activeElement.isContentEditable
+        );
+
+        if (!isTextInput) {
+          e.preventDefault();
+          chrome.tabs.create({ url: chrome.runtime.getURL('viewer.html') });
+        }
+      }
+    });
   }
 
   initializeCollapsibleSections() {

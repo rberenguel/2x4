@@ -49,6 +49,16 @@ A browser-based PWA and Chrome extension that converts EPUB files, ArXiv papers,
 - **No PWA needed:** Convert directly in the extension - all typography, format, and preview options available
 - **Persistent storage:** Queue survives browser restarts
 - **Smart separation:** ArXiv papers are automatically exported individually (e.g., `2510.04618v1.xtc`), while regular web articles are bundled together (e.g., `2x4-3-20251207.xtc`)
+- **Device file manager:** Browse, upload, rename, delete files, and create folders on X4 device via WiFi (hotspot mode)
+
+### XTC Viewer
+
+- **View XTC files:** Open and browse through XTC files directly in browser
+- **Metadata display:** View title, author, chapters, and file information
+- **Navigation:** Navigate pages with buttons or keyboard (arrows, Page Up/Down, Home/End, Space)
+- **Chapter jumping:** Click chapters in metadata panel to jump to specific sections
+- **Actual size preview:** Adjustable scale preview (10-140%) to match real device size
+- **Keyboard shortcut:** Press `v` to open viewer in new tab (works in both PWA and extension)
 
 > **NOTE:**
 > Conversion is slow for "reasons" (html2canvas overhead). Multiple tabs converting in parallel works fine.
@@ -90,6 +100,8 @@ A browser-based PWA and Chrome extension that converts EPUB files, ArXiv papers,
 
 ### Option 2: Standalone PWA (EPUB / ArXiv)
 
+> **⚠️ Note:** The Chrome extension has additional features including device file management (browse, upload, rename, delete files via WiFi). For the full feature set, consider using the extension instead.
+
 1. **Serve the application:**
 
    ```bash
@@ -121,11 +133,36 @@ A browser-based PWA and Chrome extension that converts EPUB files, ArXiv papers,
    - Click "Load from URL" or "Load from HTML"
    - Adjust settings and convert
 
-### 3. Transfer to Device
+### 3. View XTC Files
 
-- **XTC format:** Transfer `.xtc` file(s) to your Xteink X4 via USB
-- **EPUB format:** Transfer `.epub` (currently unsupported by device firmware as of 2024-12-04)
-- **ZIP format:** Extract and transfer individual images (not recommended)
+1. **Open viewer:**
+   - Press `v` keyboard shortcut in PWA or extension to open viewer in new tab
+   - Or navigate directly to `viewer.html`
+
+2. **Load and browse:**
+   - Click "Choose XTC File" to select an `.xtc` or `.xtch` file
+   - View file metadata (title, author, chapters)
+   - Navigate with buttons or keyboard shortcuts:
+     - `←` / `→` or `PageUp` / `PageDown` - Previous/Next page
+     - `Space` - Next page
+     - `Home` / `End` - First/Last page
+   - Click chapters in metadata panel to jump
+   - Adjust scale slider (10-140%) to match real device size
+
+### 4. Transfer to Device
+
+**Recommended method (Extension users):**
+- Use the built-in WiFi file manager (see Extension Device File Manager below)
+- Connect to device WiFi hotspot, upload files directly
+
+**Alternative methods:**
+- **SD Card:** Remove SD card from device, copy files via card reader
+- **Third-party apps:** Use apps like [Hojo](https://github.com/meta-boy/hojo) (unaffiliated) for WiFi transfer
+
+**Supported formats:**
+- **XTC format:** Recommended - native X4 format with chapters
+- **EPUB format:** Currently unsupported by device firmware (as of 2024-12-04)
+- **ZIP format:** Individual images (not recommended - no chapters, harder to navigate)
 
 ## XTC Volume Splitting
 
@@ -136,6 +173,29 @@ By default, XTC export creates a **single file** containing the entire book. For
 3. Files will be named: `0001-bookname-0100.xtc`, `0101-bookname-0200.xtc`, etc.
 
 **Recommendation:** Use no split (0) for most books. Use 100-page splits only for books >500 pages to keep file sizes manageable (~9MB per 100 pages).
+
+## Extension Device File Manager
+
+The Chrome extension includes a WiFi-based file manager for the Xteink X4 device:
+
+1. **Connect to device:**
+   - Enable WiFi hotspot on X4 device (SSID: "E-Paper", password: "12345678")
+   - Connect your computer to the device hotspot
+   - Enter device IP (default: 192.168.3.3) in extension
+
+2. **Browse and manage files:**
+   - Click "Manage files on device" to open file browser
+   - Navigate folders by clicking folder names
+   - Use ".." to go up one level
+
+3. **File operations:**
+   - **Upload:** Click "Upload Here" button, select files from your computer
+   - **Rename:** Click ✏️ button next to any file or folder, enter new name
+   - **Delete:** Click ✕ button next to any file, confirm deletion
+   - **New Folder:** Click "New Folder" button, enter folder name
+   - Upload to multiple folders without closing the browser
+
+**Note:** Especially useful for cleaning up Spotlight's hidden files (`.DS_Store`, etc.) that pollute the SD card when connected via USB.
 
 ## Technical Details
 
@@ -161,6 +221,7 @@ By default, XTC export creates a **single file** containing the entire book. For
 ```
 2x4/
 ├── index.html             (Main PWA interface for EPUB/ArXiv)
+├── viewer.html            (XTC file viewer)
 ├── manifest-pwa.json      (PWA manifest)
 ├── extension/             (Chrome Extension)
 │   ├── manifest.json      (Extension manifest V3)
@@ -174,6 +235,9 @@ By default, XTC export creates a **single file** containing the entire book. For
 │   └── icons/             (Extension icons)
 ├── js/                    (Shared conversion code)
 │   ├── main.js            (PWA app logic - EPUB/ArXiv only)
+│   ├── viewer-main.js     (XTC viewer app logic)
+│   ├── xtc-parser.js      (XTC file parsing)
+│   ├── xth-renderer.js    (XTH image decoding and rendering)
 │   ├── epub-parser.js     (EPUB parsing with JSZip)
 │   ├── arxiv-parser.js    (ArXiv HTML parsing)
 │   ├── article-parser.js  (Web article queue parsing - used by extension)

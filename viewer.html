@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>XTC Viewer - 2X4</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+
+    <!-- Reuse existing styles -->
+    <link rel="stylesheet" href="fonts/monoid.css" />
+    <link rel="stylesheet" href="fonts/reforma.css" />
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/reader.css" />
+
+    <style>
+      .viewer-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+      }
+
+      .file-input-section {
+        margin-bottom: 2rem;
+      }
+
+      .file-input-section h1 {
+        margin: 0 0 1rem 0;
+        color: var(--base01);
+        font-size: 1.5rem;
+      }
+
+      #xtcFileInput {
+        display: none;
+      }
+
+      .metadata-panel {
+        margin-bottom: 2rem;
+        padding: 1.5rem;
+        background: var(--base3);
+        border: 1px solid var(--base1);
+        border-radius: 8px;
+      }
+
+      .metadata-panel.collapsed .metadata-content {
+        display: none;
+      }
+
+      .metadata-panel h2 {
+        margin: 0;
+        cursor: pointer;
+        user-select: none;
+        color: var(--base01);
+        font-size: 1.1rem;
+      }
+
+      .metadata-panel h2:hover {
+        color: var(--blue);
+      }
+
+      .metadata-content {
+        margin-top: 1rem;
+        font-family: 'Monoid', monospace;
+        font-size: 0.9rem;
+        line-height: 1.6;
+      }
+
+      .metadata-section {
+        margin-bottom: 1rem;
+      }
+
+      .metadata-section h3 {
+        color: var(--orange);
+        margin: 0 0 0.5rem 0;
+        font-size: 1rem;
+      }
+
+      .metadata-row {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 0.25rem;
+      }
+
+      .metadata-label {
+        color: var(--base01);
+        min-width: 120px;
+      }
+
+      .metadata-value {
+        color: var(--base1);
+      }
+
+      .chapter-list {
+        margin-top: 0.5rem;
+      }
+
+      .chapter-item {
+        padding: 0.25rem 0;
+        color: var(--base0);
+        cursor: pointer;
+      }
+
+      .chapter-item:hover {
+        color: var(--blue);
+      }
+
+      .display-section {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-bottom: 2rem;
+      }
+
+      .canvas-container {
+        position: relative;
+        margin: 1rem 0;
+        border: 2px solid var(--base01);
+        background: white;
+      }
+
+      .actual-size-label {
+        text-align: center;
+        color: var(--base01);
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .calibration-control {
+        text-align: center;
+        margin-bottom: 1rem;
+      }
+
+      .calibration-control label {
+        font-size: 0.85rem;
+        color: var(--base01);
+        margin-right: 0.5rem;
+      }
+
+      .calibration-control input[type="range"] {
+        width: 150px;
+        vertical-align: middle;
+      }
+
+      .calibration-control small {
+        display: block;
+        color: var(--base01);
+        margin-top: 0.25rem;
+        font-size: 0.75rem;
+      }
+
+      #pageCanvas {
+        display: block;
+      }
+
+      .controls-section {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        padding: 1rem;
+        background: var(--base3);
+        border: 1px solid var(--base1);
+        border-radius: 8px;
+      }
+
+      .nav-btn {
+        padding: 0.75rem 1.5rem;
+        background: var(--blue);
+        color: var(--base3);
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: background 0.2s;
+      }
+
+      .nav-btn:hover:not(:disabled) {
+        background: var(--cyan);
+      }
+
+      .nav-btn:disabled {
+        background: var(--base01);
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
+
+      .page-info {
+        font-family: 'Monoid', monospace;
+        color: var(--base1);
+        font-size: 1.1rem;
+        min-width: 150px;
+        text-align: center;
+      }
+
+      .no-file {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: var(--base01);
+        font-size: 1.1rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="viewer-container">
+      <!-- File Input -->
+      <div class="file-input-section">
+        <h1>XTC File Viewer</h1>
+        <label for="xtcFileInput" class="file-upload-label">
+          <span class="upload-icon">📁</span>
+          <span class="upload-text">Choose XTC File</span>
+          <input type="file" id="xtcFileInput" accept=".xtc,.xtch" />
+        </label>
+      </div>
+
+      <!-- Metadata Panel -->
+      <div id="metadataPanel" class="metadata-panel collapsed" style="display: none;">
+        <h2 id="metadataToggle">
+          📄 File Information
+        </h2>
+        <div class="metadata-content" id="metadataContent">
+          <!-- Will be populated by JS -->
+        </div>
+      </div>
+
+      <!-- Display Area -->
+      <div class="display-section">
+        <div id="noFileMessage" class="no-file">
+          👆 Open an XTC file to begin
+        </div>
+
+        <div id="displayArea" style="display: none;">
+          <div class="actual-size-label">
+            <strong>Actual Screen Size</strong> (5.5cm × 9cm)
+          </div>
+
+          <div class="calibration-control">
+            <label for="sizeCalibration">
+              Scale: <span id="sizeCalibrationValue">100</span>%
+            </label>
+            <input
+              type="range"
+              id="sizeCalibration"
+              min="10"
+              max="140"
+              value="100"
+              step="1"
+            />
+            <small>Adjust until preview matches real device size</small>
+          </div>
+
+          <div id="canvasContainer" class="canvas-container">
+            <canvas id="pageCanvas"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div id="controls" class="controls-section" style="display: none;">
+        <button id="prevBtn" class="nav-btn">← Previous</button>
+        <span id="pageInfo" class="page-info">Page 1 / 1</span>
+        <button id="nextBtn" class="nav-btn">Next →</button>
+      </div>
+    </div>
+
+    <script type="module" src="js/viewer-main.js"></script>
+  </body>
+</html>

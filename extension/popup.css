@@ -44,6 +44,14 @@ h1 {
   color: #586e75;
 }
 
+.quick-actions {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  background: #eee8d5;
+  border-bottom: 1px solid #93a1a1;
+}
+
 .actions {
   padding: 12px;
   background: #fdf6e3;
@@ -80,6 +88,21 @@ h1 {
 
 .btn-primary:active:not(:disabled) {
   background: #1c5f9e;
+}
+
+.btn-secondary {
+  background: #93a1a1;
+  color: white;
+  flex: 1;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #657b83;
+}
+
+.btn-small {
+  padding: 6px 12px;
+  font-size: 12px;
 }
 
 .btn-success {

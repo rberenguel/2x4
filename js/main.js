@@ -242,6 +242,24 @@ class EPUBConverterApp {
     this.elements.convertBtn.addEventListener("click", () =>
       this.startConversion(),
     );
+
+    // Keyboard shortcut: 'v' to open viewer in new tab
+    document.addEventListener("keydown", (e) => {
+      // Only trigger if 'v' is pressed and we're not in a text input
+      if (e.key === 'v' || e.key === 'V') {
+        const activeElement = document.activeElement;
+        const isTextInput = activeElement && (
+          activeElement.tagName === 'INPUT' ||
+          activeElement.tagName === 'TEXTAREA' ||
+          activeElement.isContentEditable
+        );
+
+        if (!isTextInput) {
+          e.preventDefault();
+          window.open('viewer.html', '_blank');
+        }
+      }
+    });
   }
 
   initializeCollapsibleSections() {
