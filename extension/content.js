@@ -1,46 +1,131 @@
 /**
  * 2X4 Article Extractor - Content Script
- * Extracts article content using Readability and embeds images
+ * Extracts article content using Readability or ArxivParser (for Arxiv papers)
  */
 
 (async function extractArticle() {
   console.log("2X4: Starting article extraction...");
 
   try {
-    // Clone document for Readability (doesn't modify original)
-    const documentClone = document.cloneNode(true);
+    const currentUrl = document.location.href;
+    const isArxiv = /arxiv\.org\/html\/(\d+\.\d+)(v\d+)?/.test(currentUrl);
 
-    // Parse with Readability
-    const reader = new Readability(documentClone, {
-      debug: false,
-      maxElemsToParse: 0, // No limit
-      nbTopCandidates: 5,
-      charThreshold: 500,
-      classesToPreserve: [],
-    });
+    let article, contentWithEmbeddedImages, wordCount;
 
-    const article = reader.parse();
+    if (isArxiv) {
+      console.log("2X4: Detected Arxiv paper, using ArxivParser");
 
-    if (!article) {
-      throw new Error(
-        "Could not extract article from this page. This might not be an article, or the page structure is not supported.",
+      // Extract metadata
+      const title =
+        document
+          .querySelector("h1.ltx_title, .ltx_title_document, h1")
+          ?.textContent?.trim() || "Untitled";
+
+      const authorElements = document.querySelectorAll(
+        ".ltx_author, .ltx_personname, .ltx_authors",
       );
+      const byline =
+        Array.from(authorElements)
+          .map((el) => el.textContent.trim())
+          .filter((a) => a)
+          .join(", ") || "";
+
+      // Extract main content
+      let content = document.querySelector("article, main, .ltx_document, body");
+      if (!content) {
+        throw new Error("Could not find article content");
+      }
+
+      content = content.cloneNode(true);
+
+      // Remove unwanted elements
+      const removeSelectors = [
+        "nav",
+        "header",
+        "footer",
+        ".ltx_navigation",
+        ".ltx_footer",
+        ".ltx_header",
+        ".ltx_page_footer",
+        ".ltx_page_header",
+        ".ltx_TOC",
+        "script",
+        "style",
+        '[class*="navigation"]',
+        '[class*="menu"]',
+      ];
+      removeSelectors.forEach((selector) => {
+        content.querySelectorAll(selector).forEach((el) => el.remove());
+      });
+
+      // Convert images to absolute URLs then embed
+      const images = content.querySelectorAll("img");
+      console.log(`2X4: Found ${images.length} images in Arxiv content`);
+
+      // Ensure base URL ends with / for correct resolution
+      const baseUrl = currentUrl.endsWith('/') ? currentUrl : currentUrl + '/';
+
+      for (const img of images) {
+        try {
+          const originalSrc = img.getAttribute("src");
+          const absoluteUrl = new URL(originalSrc, baseUrl).href;
+          img.setAttribute("src", absoluteUrl);
+          console.log(`2X4: Converted ${originalSrc} -> ${absoluteUrl}`);
+        } catch (e) {
+          console.warn("Failed to resolve image URL:", img.src, e);
+        }
+      }
+
+      // Don't embed images for storage - just keep absolute URLs
+      // Images will be embedded during conversion in converter.js
+      console.log("2X4: Keeping absolute image URLs (will embed during conversion)");
+      contentWithEmbeddedImages = content.innerHTML;
+      wordCount = countWords(content.textContent);
+
+      article = {
+        title,
+        byline,
+        excerpt: "",
+        content: contentWithEmbeddedImages,
+        wordCount,
+      };
+    } else {
+      // Clone document for Readability (doesn't modify original)
+      const documentClone = document.cloneNode(true);
+
+      // Parse with Readability
+      const reader = new Readability(documentClone, {
+        debug: false,
+        maxElemsToParse: 0, // No limit
+        nbTopCandidates: 5,
+        charThreshold: 500,
+        classesToPreserve: [],
+      });
+
+      article = reader.parse();
+
+      if (!article) {
+        throw new Error(
+          "Could not extract article from this page. This might not be an article, or the page structure is not supported.",
+        );
+      }
+
+      console.log("2X4: Article extracted:", article.title);
+
+      // Don't embed images for storage - images will be embedded during conversion
+      console.log("2X4: Keeping image URLs (will embed during conversion)");
+      contentWithEmbeddedImages = article.content;
+
+      // Calculate word count
+      wordCount = countWords(article.textContent || article.content);
     }
-
-    console.log("2X4: Article extracted:", article.title);
-
-    // Embed images as data URIs
-    const contentWithEmbeddedImages = await embedImages(article.content);
-
-    // Calculate word count
-    const wordCount = countWords(article.textContent || article.content);
 
     // Build article data structure
     const articleData = {
       title: article.title || document.title || "Untitled",
       byline: article.byline || "",
-      siteName: article.siteName || new URL(document.location.href).hostname,
-      url: document.location.href,
+      siteName: article.siteName || new URL(currentUrl).hostname,
+      url: currentUrl,
       lang: document.documentElement.lang || "en",
       excerpt: article.excerpt || "",
       content: contentWithEmbeddedImages,
@@ -86,7 +171,8 @@ async function embedImages(htmlContent) {
 
   const promises = Array.from(images).map(async (img) => {
     try {
-      const src = img.src;
+      // Use getAttribute to get the actual src value, not the resolved URL
+      const src = img.getAttribute("src") || img.src;
 
       // Skip if already data URI
       if (src.startsWith("data:")) return;
@@ -97,9 +183,12 @@ async function embedImages(htmlContent) {
         return;
       }
 
+      console.log(`2X4: Processing image: ${src}`);
+
       // Fetch image
       const response = await fetch(src);
       if (!response.ok) {
+        console.error(`2X4: Failed to fetch ${src}: HTTP ${response.status}`);
         throw new Error(`HTTP ${response.status}`);
       }
 
@@ -116,9 +205,9 @@ async function embedImages(htmlContent) {
 
       // Convert to data URI
       const dataUrl = await blobToDataURL(blob);
-      img.src = dataUrl;
+      img.setAttribute("src", dataUrl);
 
-      console.log(`2X4: Embedded image (${(blob.size / 1024).toFixed(0)}KB)`);
+      console.log(`2X4: Embedded image (${(blob.size / 1024).toFixed(0)}KB): ${src}`);
     } catch (error) {
       console.warn(`2X4: Failed to embed image ${img.src}:`, error.message);
       // Remove broken images

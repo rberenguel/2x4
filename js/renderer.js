@@ -50,7 +50,8 @@ export class Renderer {
   /**
    * Internal: Renders element to high-res (1440x2400) canvas
    */
-  async _renderToHighResCanvas(pageElement) {
+  async _renderToHighResCanvas(pageElement, progressInfo = null) {
+    const perfStart = performance.now();
     if (typeof html2canvas === "undefined")
       throw new Error("html2canvas missing");
 
@@ -68,6 +69,7 @@ export class Renderer {
     const clone = pageElement.cloneNode(true);
     tempContainer.appendChild(clone);
     document.body.appendChild(tempContainer);
+    const domTime = performance.now();
 
     // Hyphenate
     if (window.Hyphenopoly && window.Hyphenopoly.hyphenators) {
@@ -75,11 +77,15 @@ export class Renderer {
       for (const p of paragraphs)
         await window.Hyphenopoly.hyphenators["en-us"](p);
     }
+    const hyphenTime = performance.now();
 
     if (document.fonts) await document.fonts.ready;
+    const fontTime = performance.now();
 
-    // Increased delay to help prevent "Blob not found" errors
+    // Delay to prevent "Blob not found" errors
+    // TODO: Find root cause - likely image decoding or font rendering race
     await new Promise((resolve) => setTimeout(resolve, 150));
+    const delayTime = performance.now();
 
     try {
       const canvas = await html2canvas(tempContainer, {
@@ -91,8 +97,24 @@ export class Renderer {
         width: this.width,
         height: this.height,
       });
+      const canvasTime = performance.now();
 
       this.applyGrayscale(canvas);
+      const grayscaleTime = performance.now();
+
+      // Log performance breakdown (only occasionally to avoid spam)
+      if (Math.random() < 0.05) {
+        console.log("Render performance (ms):", {
+          dom: (domTime - perfStart).toFixed(1),
+          hyphen: (hyphenTime - domTime).toFixed(1),
+          fonts: (fontTime - hyphenTime).toFixed(1),
+          delay: (delayTime - fontTime).toFixed(1),
+          html2canvas: (canvasTime - delayTime).toFixed(1),
+          grayscale: (grayscaleTime - canvasTime).toFixed(1),
+          total: (grayscaleTime - perfStart).toFixed(1),
+        });
+      }
+
       return canvas;
     } finally {
       document.body.removeChild(tempContainer);
@@ -108,7 +130,10 @@ export class Renderer {
     styles = {},
     progressInfo = null,
   ) {
-    const highResCanvas = await this._renderToHighResCanvas(pageElement);
+    const highResCanvas = await this._renderToHighResCanvas(
+      pageElement,
+      progressInfo,
+    );
     const finalCanvas = this.downscaleCanvas(highResCanvas);
 
     // Add progress bars if requested
@@ -117,6 +142,7 @@ export class Renderer {
         finalCanvas,
         progressInfo.chapterProgress,
         progressInfo.bookProgress,
+        progressInfo.chapterMarkers,
       );
     }
 
@@ -132,7 +158,10 @@ export class Renderer {
     styles = {},
     progressInfo = null,
   ) {
-    const highResCanvas = await this._renderToHighResCanvas(pageElement);
+    const highResCanvas = await this._renderToHighResCanvas(
+      pageElement,
+      progressInfo,
+    );
     const finalCanvas = this.downscaleCanvas(highResCanvas);
 
     // Add progress bars if requested
@@ -141,6 +170,7 @@ export class Renderer {
         finalCanvas,
         progressInfo.chapterProgress,
         progressInfo.bookProgress,
+        progressInfo.chapterMarkers,
       );
     }
 
@@ -166,11 +196,17 @@ export class Renderer {
 
   /**
    * Draw progress bars at the top of the canvas
+   * Layout (top to bottom):
+   * - Chapter markers (vertical ticks, 4px tall)
+   * - Book progress bar (horizontal, 2px tall)
+   * - Chapter progress bar (horizontal, 2px tall)
+   *
    * @param {HTMLCanvasElement} canvas - The 480×800 canvas to draw on
    * @param {number} chapterProgress - Progress through current chapter (0.0 to 1.0)
    * @param {number} bookProgress - Progress through entire book (0.0 to 1.0)
+   * @param {number[]} chapterMarkers - Array of chapter start positions (0.0 to 1.0)
    */
-  drawProgressBars(canvas, chapterProgress, bookProgress) {
+  drawProgressBars(canvas, chapterProgress, bookProgress, chapterMarkers = []) {
     console.log(
       "drawProgressBars called - canvas:",
       canvas.width,
@@ -180,18 +216,37 @@ export class Renderer {
       chapterProgress,
       "book:",
       bookProgress,
+      "markers:",
+      chapterMarkers.length,
     );
 
     const ctx = canvas.getContext("2d");
-    const barHeight = 2; // 2px at final resolution (480×800)
+    const tickHeight = 2; // Height of chapter marker ticks (same as progress bars)
+    const barHeight = 2; // Height of each progress bar
+    const bookBarY = tickHeight; // Book bar starts after ticks
+    const chapterBarY = tickHeight + barHeight; // Chapter bar below book bar
 
-    // Book progress bar (top) - lighter gray
+    // Chapter boundary markers - vertical ticks at the very top
+    if (chapterMarkers && chapterMarkers.length > 0) {
+      ctx.strokeStyle = "#000000"; // Pure black
+      ctx.lineWidth = 1;
+
+      for (const marker of chapterMarkers) {
+        const x = Math.round(canvas.width * marker);
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, tickHeight);
+        ctx.stroke();
+      }
+    }
+
+    // Book progress bar (below ticks) - lighter gray
     ctx.fillStyle = "#586e75"; // Solarized base01 (gray)
-    ctx.fillRect(0, 0, canvas.width * bookProgress, barHeight);
+    ctx.fillRect(0, bookBarY, canvas.width * bookProgress, barHeight);
 
-    // Chapter progress bar (directly below, no gap) - darker gray
+    // Chapter progress bar (below book bar) - darker gray
     ctx.fillStyle = "#073642"; // Solarized base02 (darker)
-    ctx.fillRect(0, barHeight, canvas.width * chapterProgress, barHeight);
+    ctx.fillRect(0, chapterBarY, canvas.width * chapterProgress, barHeight);
 
     console.log(
       "Progress bars drawn - book bar width:",

@@ -128,6 +128,7 @@ export class ArxivParser {
     return article;
   }
 
+
   /**
    * Process paper from URL: fetch, extract, clean
    * @param {string} url
@@ -139,8 +140,23 @@ export class ArxivParser {
     }
 
     const doc = await this.fetchPaper(url);
+
+    // Fix image URLs BEFORE extracting (while in original doc context)
+    const images = doc.querySelectorAll("img");
+    for (const img of images) {
+      try {
+        // Convert relative to absolute URL
+        const absoluteUrl = new URL(img.getAttribute("src"), url).href;
+        img.setAttribute("src", absoluteUrl);
+      } catch (e) {
+        console.warn("Failed to resolve image URL:", img.src);
+      }
+    }
+
     const metadata = this.extractMetadata(doc);
     const content = this.extractContent(doc);
+
+    // Images are now absolute URLs - html2canvas will handle them with useCORS/allowTaint
 
     return {
       metadata,

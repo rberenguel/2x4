@@ -229,6 +229,7 @@ export class ConversionPipeline {
                 currentVolume,
                 xtc.filenamePattern,
                 metadata,
+                totalChapters,
               );
               yield {
                 type: "volume-complete",
@@ -272,7 +273,13 @@ export class ConversionPipeline {
             const chapterProgress = pageIndex / currentPageInfo.pageCount;
             const bookProgress =
               (currentPageInfo.startPage - 1 + pageIndex) / totalPages;
-            progressInfo = { chapterProgress, bookProgress };
+
+            // Calculate chapter boundary positions (as fraction of total book)
+            const chapterMarkers = pageMap.map(
+              (chapter) => (chapter.startPage - 1) / totalPages,
+            );
+
+            progressInfo = { chapterProgress, bookProgress, chapterMarkers };
           }
 
           const renderResult = await this._renderPage(
@@ -340,6 +347,7 @@ export class ConversionPipeline {
             currentVolume,
             xtc.filenamePattern,
             metadata,
+            totalChapters,
           );
           yield {
             type: "volume-complete",
@@ -355,7 +363,7 @@ export class ConversionPipeline {
           const blob = new Blob([xtcBuffer], {
             type: "application/octet-stream",
           });
-          const filename = `${this._sanitizeFilename(metadata.title)}.xtc`;
+          const filename = this._generateXTCFilename(totalChapters);
           files.push({ blob, filename });
         }
       } else if (format === "epub") {
@@ -462,19 +470,11 @@ export class ConversionPipeline {
    * Finalize an XTC volume and return blob + filename
    * @private
    */
-  async _finalizeVolume(volume, filenamePattern, metadata) {
+  async _finalizeVolume(volume, filenamePattern, metadata, totalChapters) {
     const xtcBuffer = volume.builder.generate();
     const blob = new Blob([xtcBuffer], { type: "application/octet-stream" });
 
-    const baseTitle = filenamePattern
-      ? this._sanitizeFilename(filenamePattern)
-      : this._sanitizeFilename(metadata.title);
-
-    const startPage = String(volume.startPage).padStart(4, "0");
-    const endPage = String(
-      volume.startPage + volume.pagesInVolume - 1,
-    ).padStart(4, "0");
-    const filename = `${startPage}-${baseTitle}-${endPage}.xtc`;
+    const filename = this._generateXTCFilename(totalChapters);
 
     return { blob, filename };
   }
@@ -522,5 +522,22 @@ export class ConversionPipeline {
       .replace(/-+/g, "-")
       .replace(/^-|-$/g, "")
       .substring(0, 200);
+  }
+
+  /**
+   * Generate XTC filename in format: 2x4-N-YYYYMMDD.xtc
+   * where N is the number of articles and YYYYMMDD is today's date
+   * @private
+   * @param {number} articleCount - Number of articles in the export
+   * @returns {string} Formatted filename
+   */
+  _generateXTCFilename(articleCount) {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    const dateStr = `${year}${month}${day}`;
+
+    return `2x4-${articleCount}-${dateStr}.xtc`;
   }
 }

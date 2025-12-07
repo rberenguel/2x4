@@ -52,6 +52,7 @@ class ExtensionConverter {
     this.attachEventListeners();
     this.initializeCollapsibleSections();
     this.initializePreviewTabs();
+    this.loadTypographySettings();
     this.loadQueueFromStorage();
     this.loadCalibrationScale();
   }
@@ -118,14 +119,17 @@ class ExtensionConverter {
     // Typography
     this.elements.fontFamily.addEventListener("change", () => {
       this.updatePaginatorSettings();
+      this.saveTypographySettings();
     });
     this.elements.fontSize.addEventListener("input", (e) => {
       this.elements.fontSizeValue.textContent = e.target.value;
       this.debouncedUpdatePaginatorSettings();
+      this.saveTypographySettings();
     });
     this.elements.lineHeight.addEventListener("input", (e) => {
       this.elements.lineHeightValue.textContent = e.target.value;
       this.debouncedUpdatePaginatorSettings();
+      this.saveTypographySettings();
     });
 
     // Image quality
@@ -209,6 +213,38 @@ class ExtensionConverter {
         });
       });
     });
+  }
+
+  loadTypographySettings() {
+    const savedSettings = localStorage.getItem("typographySettings");
+    if (savedSettings) {
+      try {
+        const settings = JSON.parse(savedSettings);
+        this.elements.fontFamily.value = settings.fontFamily || "Georgia";
+        this.elements.fontSize.value = settings.fontSize || 16;
+        this.elements.fontSizeValue.textContent = settings.fontSize || 16;
+        this.elements.lineHeight.value = settings.lineHeight || 1.5;
+        this.elements.lineHeightValue.textContent = settings.lineHeight || 1.5;
+
+        // Apply to paginator
+        this.paginator.updateSettings({
+          fontFamily: this.elements.fontFamily.value,
+          fontSize: parseInt(this.elements.fontSize.value),
+          lineHeight: parseFloat(this.elements.lineHeight.value),
+        });
+      } catch (e) {
+        console.warn("Failed to load typography settings:", e);
+      }
+    }
+  }
+
+  saveTypographySettings() {
+    const settings = {
+      fontFamily: this.elements.fontFamily.value,
+      fontSize: parseInt(this.elements.fontSize.value),
+      lineHeight: parseFloat(this.elements.lineHeight.value),
+    };
+    localStorage.setItem("typographySettings", JSON.stringify(settings));
   }
 
   loadCalibrationScale() {
@@ -353,7 +389,13 @@ class ExtensionConverter {
         const chapterProgress = currentPageIndex / currentPageInfo.pageCount;
         const bookProgress =
           (currentPageInfo.startPage - 1 + currentPageIndex) / this.totalPages;
-        progressInfo = { chapterProgress, bookProgress };
+
+        // Calculate chapter boundary positions
+        const chapterMarkers = this.pageMap.map(
+          (chapter) => (chapter.startPage - 1) / this.totalPages,
+        );
+
+        progressInfo = { chapterProgress, bookProgress, chapterMarkers };
       }
 
       const blob = await this.renderer.renderPageToImage(
@@ -486,6 +528,9 @@ class ExtensionConverter {
       this.pageMap = null;
       this.totalPages = 0;
 
+      // Reset button text
+      this.elements.convertBtn.textContent = "Convert & Export";
+
       // Reload current chapter to update preview (remove progress bars)
       if (this.articleParser.articles.length > 0) {
         await this.loadChapter(this.currentChapterIndex);
@@ -528,9 +573,36 @@ class ExtensionConverter {
       `Analysis complete! Found ${this.totalPages} pages total.`,
       100,
     );
+
+    // Update convert button with time estimate
+    this.updateConvertButtonWithEstimate();
+
     setTimeout(() => {
       this.elements.progressContainer.classList.add("hidden");
     }, 2000);
+  }
+
+  /**
+   * Update convert button text with time estimate
+   */
+  updateConvertButtonWithEstimate() {
+    if (this.totalPages > 0) {
+      // Estimate ~500ms per page (based on html2canvas performance)
+      const estimatedSeconds = Math.ceil(this.totalPages * 0.5);
+      const minutes = Math.floor(estimatedSeconds / 60);
+      const seconds = estimatedSeconds % 60;
+
+      let timeStr = "";
+      if (minutes > 0) {
+        timeStr = seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes}m`;
+      } else {
+        timeStr = `${seconds}s`;
+      }
+
+      this.elements.convertBtn.textContent = `Convert & Export (~${timeStr})`;
+    } else {
+      this.elements.convertBtn.textContent = "Convert & Export";
+    }
   }
 
   /**

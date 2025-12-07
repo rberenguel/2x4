@@ -44,7 +44,13 @@
 }
 
 /* Abstract */
-.ltx_abstract,
+.ltx_abstract {
+  font-size: 0.93em; /* 13/14 */
+  margin: 0.3em 0;
+  padding: 0.5em;
+  /* border-left removed for html2canvas compatibility */
+}
+
 .arxiv-content .abstract {
   font-size: 0.93em; /* 13/14 */
   margin: 1em 0;
@@ -58,11 +64,44 @@
   margin-bottom: 0.5em;
 }
 
-/* Authors */
-.ltx_authors,
-.arxiv-content .authors {
+/* Article title - compact size */
+h1.article-title {
+  font-size: 80% !important;
+}
+
+/* Authors - replace with ellipsis text */
+.ltx_authors {
+  font-size: 0;
+}
+
+.ltx_authors::before {
+  content: "(authors elided)";
+  font-size: 0.9rem;
   font-style: italic;
-  margin: 0.5em 0 1em 0;
+  color: #666;
+  display: block;
+}
+
+.arxiv-content .authors {
+  display: none;
+}
+
+/* Article metadata - hide for cleaner layout */
+.article-byline,
+.article-source {
+  display: none;
+}
+
+/* Keep .article-url visible - color is defined in reader.css */
+
+/* Hide target section anchor */
+#target-section {
+  display: none;
+}
+
+/* Hide duplicate title (ltx_title_document) since article-title is always present */
+.ltx_title.ltx_title_document {
+  display: none;
 }
 
 /* Tables */

@@ -21,6 +21,25 @@
   text-rendering: optimizeLegibility;
 }
 
+/* Small caps styling - handle various EPUB small caps patterns */
+#virtual-device .smallcaps,
+#virtual-device .char-sc,
+#virtual-device .small-caps,
+.preview-viewport .smallcaps,
+.preview-viewport .char-sc,
+.preview-viewport .small-caps {
+  font-variant: small-caps;
+  text-transform: lowercase;
+  font-size: 1em;
+  letter-spacing: 0.05em;
+}
+
+/* Remove spacing between char-sc and smallcaps elements */
+#virtual-device .char-sc + .smallcaps,
+.preview-viewport .char-sc + .smallcaps {
+  margin-left: -0.25em;
+}
+
 /* Basic HTML elements */
 #virtual-device h1,
 #virtual-device h2,
@@ -30,8 +49,8 @@
 #virtual-device h6 {
   font-weight: 600;
   line-height: 1.25;
-  margin-top: 1.5em;
-  margin-bottom: 0.5em;
+  margin-top: 0.5em;
+  margin-bottom: 0.25em;
 }
 
 #virtual-device h1 {
@@ -202,8 +221,8 @@
 
 /* Web Article Styles */
 .web-article .article-header {
-  margin-bottom: 2em;
-  padding-bottom: 1em;
+  margin-bottom: 1em;
+  padding-bottom: 0em;
   border-bottom: 2px solid #93a1a1;
 }
 
@@ -227,11 +246,11 @@
 
 .web-article .article-url {
   font-size: 0.75em;
-  color: #93a1a1;
+  color: #586e75;
   margin: 0.3em 0;
   word-break: break-all;
 }
 
 .web-article .article-content {
-  margin-top: 2em;
+  margin-top: 0.5em;
 }

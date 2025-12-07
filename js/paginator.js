@@ -79,6 +79,9 @@ export class Paginator {
         font-family: ${this.settings.fontFamily}, sans-serif;
         font-size: ${this.settings.fontSize}px;
         line-height: ${this.settings.lineHeight};
+        text-align: justify;
+        hyphens: auto;
+        -webkit-hyphens: auto;
       }
       ${this.settings.customCSS}
     `;

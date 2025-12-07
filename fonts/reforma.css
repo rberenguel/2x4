@@ -1,15 +1,17 @@
 @font-face {
-  font-family: "reforma";
+  font-family: "Reforma";
   src: url("Reforma1969-Blanca.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
 }
 @font-face {
-  font-family: "reforma-bold";
-  src: url("Reforma1969-Negra.woff") format("woff2");
+  font-family: "Reforma";
+  src: url("Reforma1969-Negra.woff") format("woff");
   font-weight: bold;
   font-style: normal;
 }
 @font-face {
-  font-family: "reforma-italic";
+  font-family: "Reforma";
   src: url("Reforma1969-BlancaItalica.woff2") format("woff2");
   font-weight: normal;
   font-style: italic;

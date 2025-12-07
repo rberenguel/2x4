@@ -536,7 +536,13 @@ class EPUBConverterApp {
         const chapterProgress = currentPageIndex / currentPageInfo.pageCount;
         const bookProgress =
           (currentPageInfo.startPage - 1 + currentPageIndex) / this.totalPages;
-        progressInfo = { chapterProgress, bookProgress };
+
+        // Calculate chapter boundary positions
+        const chapterMarkers = this.pageMap.map(
+          (chapter) => (chapter.startPage - 1) / this.totalPages,
+        );
+
+        progressInfo = { chapterProgress, bookProgress, chapterMarkers };
         console.log(
           "Progress bars enabled - progressInfo:",
           progressInfo,
@@ -623,6 +629,13 @@ class EPUBConverterApp {
         this.elements.fontSizeValue.textContent = savedSettings.fontSize;
         this.elements.lineHeight.value = savedSettings.lineHeight;
         this.elements.lineHeightValue.textContent = savedSettings.lineHeight;
+
+        // Apply settings to paginator
+        this.paginator.updateSettings({
+          fontFamily: savedSettings.fontFamily,
+          fontSize: savedSettings.fontSize,
+          lineHeight: savedSettings.lineHeight,
+        });
       }
     } catch (error) {
       console.warn("Failed to load saved settings:", error);
@@ -1159,6 +1172,9 @@ class EPUBConverterApp {
       this.pageMap = null;
       this.totalPages = 0;
 
+      // Reset button text
+      this.elements.convertBtn.textContent = "Convert & Export";
+
       // Reload current chapter to update preview (remove progress bars)
       if (this.epubLoaded) {
         await this.loadChapter(this.paginator.currentChapterIndex);
@@ -1201,9 +1217,36 @@ class EPUBConverterApp {
       `Analysis complete! Found ${this.totalPages} pages total.`,
       100,
     );
+
+    // Update convert button with time estimate
+    this.updateConvertButtonWithEstimate();
+
     setTimeout(() => {
       this.elements.progressContainer.classList.add("hidden");
     }, 2000);
+  }
+
+  /**
+   * Update convert button text with time estimate
+   */
+  updateConvertButtonWithEstimate() {
+    if (this.totalPages > 0) {
+      // Estimate ~500ms per page (based on html2canvas performance)
+      const estimatedSeconds = Math.ceil((this.totalPages * 0.5));
+      const minutes = Math.floor(estimatedSeconds / 60);
+      const seconds = estimatedSeconds % 60;
+
+      let timeStr = "";
+      if (minutes > 0) {
+        timeStr = seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes}m`;
+      } else {
+        timeStr = `${seconds}s`;
+      }
+
+      this.elements.convertBtn.textContent = `Convert & Export (~${timeStr})`;
+    } else {
+      this.elements.convertBtn.textContent = "Convert & Export";
+    }
   }
 
   /**
