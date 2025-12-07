@@ -363,7 +363,19 @@ export class ConversionPipeline {
           const blob = new Blob([xtcBuffer], {
             type: "application/octet-stream",
           });
-          const filename = this._generateXTCFilename(totalChapters);
+          // Use filenamePattern if provided (for extension Arxiv papers with ID),
+          // otherwise use metadata title (PWA EPUB/Arxiv) or date-based name (extension articles)
+          let filename;
+          if (xtc.filenamePattern) {
+            // Extension: Arxiv paper with ID
+            filename = `${xtc.filenamePattern}.xtc`;
+          } else if (metadata.title && metadata.title !== `${totalChapters} Articles`) {
+            // PWA: Use book/paper title
+            filename = `${this._sanitizeFilename(metadata.title)}.xtc`;
+          } else {
+            // Extension: Regular articles bundle (date-based)
+            filename = this._generateXTCFilename(totalChapters);
+          }
           files.push({ blob, filename });
         }
       } else if (format === "epub") {

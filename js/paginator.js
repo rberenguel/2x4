@@ -167,11 +167,18 @@ export class Paginator {
         return Promise.resolve();
       }
 
+      // Log non-data-URI images for debugging
+      if (img.src && !img.src.startsWith("data:")) {
+        console.warn("waitForContentLoad: image", index, "has external URL:", img.src.substring(0, 100));
+      }
+
+      // Check if already complete (loaded or failed)
       if (img.complete) {
         console.log("waitForContentLoad: image", index, "already complete");
         return Promise.resolve();
       }
 
+      // For external URLs, wait with timeout
       return Promise.race([
         new Promise((resolve) => {
           img.onload = () => {
@@ -182,6 +189,12 @@ export class Paginator {
             console.log("waitForContentLoad: image", index, "error", e);
             resolve(); // Continue even if image fails
           };
+
+          // Double-check if image became complete while setting up handlers
+          if (img.complete) {
+            console.log("waitForContentLoad: image", index, "completed during setup");
+            resolve();
+          }
         }),
         new Promise((resolve) => {
           setTimeout(() => {
@@ -338,7 +351,7 @@ export class Paginator {
     pageContainer.style.overflow = "hidden";
     pageContainer.style.position = "relative";
 
-    // Clone content
+    // Clone content (full container needed for multi-column layout to work)
     const clone = this.container.cloneNode(true);
     clone.style.position = "absolute";
     clone.style.left = "0";

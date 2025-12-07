@@ -109,6 +109,38 @@
           <div class="settings-section">
             <h2>Load Arxiv Paper</h2>
 
+            <small
+              style="
+                color: #dc322f;
+                display: block;
+                margin-bottom: 1rem;
+                font-size: 0.85rem;
+                line-height: 1.4;
+              "
+            >
+              ⚠️ If the paper has figures/images, use the
+              <a
+                href="https://github.com/rberenguel/2x4?tab=readme-ov-file#chrome-extension-web-articles"
+                target="_blank"
+                style="color: #268bd2; text-decoration: underline"
+                >Chrome extension</a
+              >
+              instead (CORS prevents image loading in the PWA)
+            </small>
+            <small
+              style="
+                color: #b58900;
+                display: block;
+                margin-bottom: 1rem;
+                font-size: 0.85rem;
+                line-height: 1.4;
+              "
+            >
+              ⏱️ <strong>Performance note:</strong> ArXiv papers with heavy
+              mathematical notation (inline SVG) can be very slow to render
+              (10-30 seconds per page). This is an html2canvas limitation.
+            </small>
+
             <div class="control-group">
               <label for="arxiv-url">Arxiv HTML URL</label>
               <input

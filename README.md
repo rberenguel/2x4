@@ -39,14 +39,16 @@ A browser-based PWA and Chrome extension that converts EPUB files, ArXiv papers,
 - **Grayscale optimization:** 4-level XTH encoding optimized for e-ink displays
 - **Image embedding:** Web articles include images as embedded data URIs
 
-### Chrome Extension (Web Articles)
+### Chrome Extension (Web Articles & ArXiv with Images)
 
 - **One-click extraction:** Extract articles from any webpage using Mozilla Readability
+- **ArXiv paper support:** Extract ArXiv papers with embedded images (bypasses CORS restrictions)
 - **Reading queue:** Build a multi-article queue before converting
 - **Queue management:** Add, remove, reorder articles
 - **Self-contained converter:** Extension includes its own converter interface with full PWA features
 - **No PWA needed:** Convert directly in the extension - all typography, format, and preview options available
 - **Persistent storage:** Queue survives browser restarts
+- **Smart separation:** ArXiv papers are automatically exported individually (e.g., `2510.04618v1.xtc`), while regular web articles are bundled together (e.g., `2x4-3-20251207.xtc`)
 
 > **NOTE:**
 > Conversion is slow for "reasons" (html2canvas overhead). Multiple tabs converting in parallel works fine.
@@ -70,7 +72,7 @@ A browser-based PWA and Chrome extension that converts EPUB files, ArXiv papers,
 
 2. **Extract & Convert Articles:**
 
-   - Browse to any article (Medium, news sites, blogs, etc.)
+   - Browse to any article (Medium, news sites, blogs, etc.) or ArXiv paper
    - Click the 2X4 extension icon in Chrome toolbar
    - Click "Add Current Page" to extract article
    - Repeat for more articles to build a queue
@@ -80,7 +82,11 @@ A browser-based PWA and Chrome extension that converts EPUB files, ArXiv papers,
    - Queue is automatically loaded
    - Adjust typography/format settings if desired
    - Preview articles with navigation
-   - Click "Convert & Export" to generate XTC file
+   - Click "Convert & Export" to generate XTC file(s)
+   - ArXiv papers are exported individually with their ArXiv ID as filename
+   - Regular articles are bundled together with date-based filename
+
+   **Note:** ArXiv papers with heavy mathematical notation can take 10-30 seconds per page to render. Consider converting them separately from web articles.
 
 ### Option 2: Standalone PWA (EPUB / ArXiv)
 
@@ -109,6 +115,7 @@ A browser-based PWA and Chrome extension that converts EPUB files, ArXiv papers,
 3. **Convert an ArXiv paper:**
 
    - Select "Arxiv" mode
+   - **⚠️ Note:** PWA cannot load images due to CORS restrictions. For papers with figures, use the Chrome extension instead.
    - Paste ArXiv HTML URL (e.g., `https://arxiv.org/html/2511.15304v2`)
    - OR paste full HTML source from browser (View Source)
    - Click "Load from URL" or "Load from HTML"
@@ -218,15 +225,20 @@ Extension requires Chrome/Chromium for `chrome.storage` and Manifest V3 support.
 ### Slow Conversion
 
 - html2canvas is CPU-intensive
+- **ArXiv papers with heavy math**: Papers with lots of inline SVG equations (LaTeX math) can be extremely slow (10-30 seconds per page). This is an html2canvas limitation when processing complex SVG structures. Consider:
+  - Converting ArXiv papers separately from web articles
+  - Starting the conversion and letting it run in the background
+  - Using the PWA text-only mode (no images) for reading without figures
 - Use "Testing Limits" to export fewer pages initially
 - Open multiple PWA tabs to convert in parallel
 - Consider reducing JPEG quality (70-80% is usually fine)
 
 ### Images Missing in Articles
 
-- Some sites block image downloads (CORS)
-- Extension embeds images as data URIs when possible
-- External images may fail to load
+- **PWA ArXiv mode:** Cannot load images due to CORS restrictions - use Chrome extension for papers with figures
+- **Extension:** Embeds images as data URIs when possible, bypasses CORS for ArXiv papers
+- Some websites may still block image downloads (CORS)
+- External images may fail to load on certain sites
 
 ## Credits
 

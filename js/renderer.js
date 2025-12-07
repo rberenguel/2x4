@@ -96,6 +96,10 @@ export class Renderer {
         allowTaint: true,
         width: this.width,
         height: this.height,
+        windowWidth: this.width,
+        windowHeight: this.height,
+        x: 0,
+        y: 0,
       });
       const canvasTime = performance.now();
 

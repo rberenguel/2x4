@@ -31,6 +31,20 @@
           <div id="queue-info" class="file-info" style="display: block">
             <p id="queue-status">Loading queue...</p>
           </div>
+          <small
+            style="
+              color: #b58900;
+              display: block;
+              margin-top: 0.75rem;
+              font-size: 0.85rem;
+              line-height: 1.4;
+            "
+          >
+            ⏱️ <strong>Performance note:</strong> ArXiv papers with heavy
+            mathematical notation can be very slow to render (10-30 seconds per
+            page due to html2canvas processing inline SVG equations). Consider
+            converting ArXiv papers separately from web articles.
+          </small>
         </div>
 
         <!-- Typography -->
@@ -219,6 +233,61 @@ h1 { margin-top: 2em; }"
             <p id="progress-text" class="progress-text"></p>
           </div>
         </div>
+
+        <!-- Device File Manager -->
+        <div class="settings-section collapsed">
+          <h2 class="collapsible">
+            Device File Manager <span class="collapse-icon">▼</span>
+          </h2>
+          <div class="section-content">
+            <div class="control-group">
+              <label for="device-ip">Device IP Address</label>
+              <input
+                type="text"
+                id="device-ip"
+                value="192.168.3.3"
+                placeholder="192.168.3.3"
+                style="
+                  width: 100%;
+                  padding: 0.5rem;
+                  border: 1px solid #ccc;
+                  border-radius: 4px;
+                  font-family: monospace;
+                "
+              />
+              <small
+                style="
+                  color: #888;
+                  display: block;
+                  margin-top: 4px;
+                  font-size: 0.75rem;
+                "
+              >
+                Connect to device WiFi hotspot first (SSID: E-Paper, password:
+                12345678)
+              </small>
+            </div>
+
+            <button
+              id="browse-device-btn"
+              class="apply-css-btn"
+              style="margin-top: 0.5rem"
+            >
+              Manage files on device
+            </button>
+
+            <div
+              id="device-status"
+              style="
+                margin-top: 0.75rem;
+                padding: 0.5rem;
+                border-radius: 4px;
+                font-size: 0.85rem;
+                display: none;
+              "
+            ></div>
+          </div>
+        </div>
       </aside>
 
       <!-- Right Panel: Preview -->
@@ -314,6 +383,40 @@ h1 { margin-top: 2em; }"
 
     <!-- Hidden rendering container -->
     <div id="virtual-device" class="virtual-device"></div>
+
+    <!-- Device Browser Modal -->
+    <div id="device-browser-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; padding: 2rem;">
+      <div style="background: #fdf6e3; max-width: 600px; margin: 0 auto; border-radius: 8px; overflow: hidden; max-height: 90vh; display: flex; flex-direction: column;">
+        <div style="padding: 1rem; border-bottom: 2px solid #93a1a1; display: flex; justify-content: space-between; align-items: center;">
+          <h2 style="margin: 0; font-size: 1.2rem;">Browse Device</h2>
+          <button id="close-browser-btn" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #586e75;">&times;</button>
+        </div>
+
+        <div style="padding: 1rem; border-bottom: 1px solid #eee8d5;">
+          <div style="font-family: monospace; color: #586e75; font-size: 0.9rem;">
+            Current path: <span id="current-path">/</span>
+          </div>
+        </div>
+
+        <div id="folder-list" style="flex: 1; overflow-y: auto; padding: 1rem;">
+          <div style="text-align: center; color: #93a1a1; padding: 2rem;">
+            Loading...
+          </div>
+        </div>
+
+        <div style="padding: 1rem; border-top: 2px solid #93a1a1; display: flex; gap: 0.5rem;">
+          <button id="new-folder-btn" class="apply-css-btn" style="background: #268bd2;">
+            New Folder
+          </button>
+          <button id="upload-here-btn" class="convert-btn" style="flex: 1;">
+            Upload Here
+          </button>
+          <button id="cancel-browser-btn" class="apply-css-btn" style="background: #93a1a1;">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- Scripts -->
     <script src="jszip.min.js"></script>

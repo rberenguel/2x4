@@ -104,6 +104,11 @@ h1.article-title {
   display: none;
 }
 
+/* Hide package alerts (LaTeX warnings/notes) */
+.package-alerts {
+  display: none;
+}
+
 /* Tables */
 .arxiv-content table {
   width: 100%;
