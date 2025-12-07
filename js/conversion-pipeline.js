@@ -369,7 +369,10 @@ export class ConversionPipeline {
           if (xtc.filenamePattern) {
             // Extension: Arxiv paper with ID
             filename = `${xtc.filenamePattern}.xtc`;
-          } else if (metadata.title && metadata.title !== `${totalChapters} Articles`) {
+          } else if (
+            metadata.title &&
+            metadata.title !== `${totalChapters} Articles`
+          ) {
             // PWA: Use book/paper title
             filename = `${this._sanitizeFilename(metadata.title)}.xtc`;
           } else {

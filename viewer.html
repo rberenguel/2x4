@@ -59,7 +59,7 @@
 
       .metadata-content {
         margin-top: 1rem;
-        font-family: 'Monoid', monospace;
+        font-family: "Monoid", monospace;
         font-size: 0.9rem;
         line-height: 1.6;
       }
@@ -184,7 +184,7 @@
       }
 
       .page-info {
-        font-family: 'Monoid', monospace;
+        font-family: "Monoid", monospace;
         color: var(--base1);
         font-size: 1.1rem;
         min-width: 150px;
@@ -212,10 +212,12 @@
       </div>
 
       <!-- Metadata Panel -->
-      <div id="metadataPanel" class="metadata-panel collapsed" style="display: none;">
-        <h2 id="metadataToggle">
-          📄 File Information
-        </h2>
+      <div
+        id="metadataPanel"
+        class="metadata-panel collapsed"
+        style="display: none"
+      >
+        <h2 id="metadataToggle">📄 File Information</h2>
         <div class="metadata-content" id="metadataContent">
           <!-- Will be populated by JS -->
         </div>
@@ -227,7 +229,7 @@
           👆 Open an XTC file to begin
         </div>
 
-        <div id="displayArea" style="display: none;">
+        <div id="displayArea" style="display: none">
           <div class="actual-size-label">
             <strong>Actual Screen Size</strong> (5.5cm × 9cm)
           </div>
@@ -254,7 +256,7 @@
       </div>
 
       <!-- Controls -->
-      <div id="controls" class="controls-section" style="display: none;">
+      <div id="controls" class="controls-section" style="display: none">
         <button id="prevBtn" class="nav-btn">← Previous</button>
         <span id="pageInfo" class="page-info">Page 1 / 1</span>
         <button id="nextBtn" class="nav-btn">Next →</button>

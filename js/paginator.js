@@ -169,7 +169,12 @@ export class Paginator {
 
       // Log non-data-URI images for debugging
       if (img.src && !img.src.startsWith("data:")) {
-        console.warn("waitForContentLoad: image", index, "has external URL:", img.src.substring(0, 100));
+        console.warn(
+          "waitForContentLoad: image",
+          index,
+          "has external URL:",
+          img.src.substring(0, 100),
+        );
       }
 
       // Check if already complete (loaded or failed)
@@ -192,7 +197,11 @@ export class Paginator {
 
           // Double-check if image became complete while setting up handlers
           if (img.complete) {
-            console.log("waitForContentLoad: image", index, "completed during setup");
+            console.log(
+              "waitForContentLoad: image",
+              index,
+              "completed during setup",
+            );
             resolve();
           }
         }),

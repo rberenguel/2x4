@@ -31,7 +31,9 @@
           .join(", ") || "";
 
       // Extract main content
-      let content = document.querySelector("article, main, .ltx_document, body");
+      let content = document.querySelector(
+        "article, main, .ltx_document, body",
+      );
       if (!content) {
         throw new Error("Could not find article content");
       }
@@ -63,7 +65,7 @@
       console.log(`2X4: Found ${images.length} images in Arxiv content`);
 
       // Ensure base URL ends with / for correct resolution
-      const baseUrl = currentUrl.endsWith('/') ? currentUrl : currentUrl + '/';
+      const baseUrl = currentUrl.endsWith("/") ? currentUrl : currentUrl + "/";
 
       for (const img of images) {
         try {
@@ -78,7 +80,9 @@
 
       // Don't embed images for storage - just keep absolute URLs
       // Images will be embedded during conversion in converter.js
-      console.log("2X4: Keeping absolute image URLs (will embed during conversion)");
+      console.log(
+        "2X4: Keeping absolute image URLs (will embed during conversion)",
+      );
       contentWithEmbeddedImages = content.innerHTML;
       wordCount = countWords(content.textContent);
 
@@ -207,7 +211,9 @@ async function embedImages(htmlContent) {
       const dataUrl = await blobToDataURL(blob);
       img.setAttribute("src", dataUrl);
 
-      console.log(`2X4: Embedded image (${(blob.size / 1024).toFixed(0)}KB): ${src}`);
+      console.log(
+        `2X4: Embedded image (${(blob.size / 1024).toFixed(0)}KB): ${src}`,
+      );
     } catch (error) {
       console.warn(`2X4: Failed to embed image ${img.src}:`, error.message);
       // Remove broken images

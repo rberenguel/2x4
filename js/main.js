@@ -246,17 +246,17 @@ class EPUBConverterApp {
     // Keyboard shortcut: 'v' to open viewer in new tab
     document.addEventListener("keydown", (e) => {
       // Only trigger if 'v' is pressed and we're not in a text input
-      if (e.key === 'v' || e.key === 'V') {
+      if (e.key === "v" || e.key === "V") {
         const activeElement = document.activeElement;
-        const isTextInput = activeElement && (
-          activeElement.tagName === 'INPUT' ||
-          activeElement.tagName === 'TEXTAREA' ||
-          activeElement.isContentEditable
-        );
+        const isTextInput =
+          activeElement &&
+          (activeElement.tagName === "INPUT" ||
+            activeElement.tagName === "TEXTAREA" ||
+            activeElement.isContentEditable);
 
         if (!isTextInput) {
           e.preventDefault();
-          window.open('viewer.html', '_blank');
+          window.open("viewer.html", "_blank");
         }
       }
     });
@@ -1250,7 +1250,7 @@ class EPUBConverterApp {
   updateConvertButtonWithEstimate() {
     if (this.totalPages > 0) {
       // Estimate ~500ms per page (based on html2canvas performance)
-      const estimatedSeconds = Math.ceil((this.totalPages * 0.5));
+      const estimatedSeconds = Math.ceil(this.totalPages * 0.5);
       const minutes = Math.floor(estimatedSeconds / 60);
       const seconds = estimatedSeconds % 60;
 

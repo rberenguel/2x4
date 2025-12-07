@@ -128,7 +128,6 @@ export class ArxivParser {
     return article;
   }
 
-
   /**
    * Process paper from URL: fetch, extract, clean
    * @param {string} url

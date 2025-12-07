@@ -183,17 +183,17 @@ class ExtensionConverter {
     // Keyboard shortcut: 'v' to open viewer in new tab
     document.addEventListener("keydown", (e) => {
       // Only trigger if 'v' is pressed and we're not in a text input
-      if (e.key === 'v' || e.key === 'V') {
+      if (e.key === "v" || e.key === "V") {
         const activeElement = document.activeElement;
-        const isTextInput = activeElement && (
-          activeElement.tagName === 'INPUT' ||
-          activeElement.tagName === 'TEXTAREA' ||
-          activeElement.isContentEditable
-        );
+        const isTextInput =
+          activeElement &&
+          (activeElement.tagName === "INPUT" ||
+            activeElement.tagName === "TEXTAREA" ||
+            activeElement.isContentEditable);
 
         if (!isTextInput) {
           e.preventDefault();
-          chrome.tabs.create({ url: chrome.runtime.getURL('viewer.html') });
+          chrome.tabs.create({ url: chrome.runtime.getURL("viewer.html") });
         }
       }
     });
@@ -322,7 +322,9 @@ class ExtensionConverter {
         const beforeLength = article.content.length;
         article.content = await this.embedImages(article.content);
         const afterLength = article.content.length;
-        console.log(`Article ${i + 1}: content length ${beforeLength} -> ${afterLength} (${afterLength > beforeLength ? 'images embedded' : 'no change'})`);
+        console.log(
+          `Article ${i + 1}: content length ${beforeLength} -> ${afterLength} (${afterLength > beforeLength ? "images embedded" : "no change"})`,
+        );
       }
       console.log("2X4: Image embedding complete for all articles");
 
@@ -751,7 +753,9 @@ class ExtensionConverter {
 
         // Skip if too large (>5MB)
         if (blob.size > 5 * 1024 * 1024) {
-          console.warn(`Image too large (${(blob.size / 1024 / 1024).toFixed(2)}MB), skipping: ${src}`);
+          console.warn(
+            `Image too large (${(blob.size / 1024 / 1024).toFixed(2)}MB), skipping: ${src}`,
+          );
           img.remove();
           skipped++;
           return;
@@ -767,7 +771,9 @@ class ExtensionConverter {
 
         img.setAttribute("src", dataUrl);
         embedded++;
-        console.log(`Embedded image (${(blob.size / 1024).toFixed(0)}KB): ${src}`);
+        console.log(
+          `Embedded image (${(blob.size / 1024).toFixed(0)}KB): ${src}`,
+        );
       } catch (error) {
         console.warn(`Failed to embed image ${img.src}:`, error.message);
         img.remove();
@@ -776,7 +782,9 @@ class ExtensionConverter {
     });
 
     await Promise.all(promises);
-    console.log(`2X4: Image embedding complete: ${embedded} embedded, ${skipped} skipped, ${failed} failed`);
+    console.log(
+      `2X4: Image embedding complete: ${embedded} embedded, ${skipped} skipped, ${failed} failed`,
+    );
     return doc.body.innerHTML;
   }
 
@@ -815,10 +823,15 @@ class ExtensionConverter {
       // Convert each Arxiv paper individually
       for (let i = 0; i < arxivPapers.length; i++) {
         const { article, index } = arxivPapers[i];
-        console.log(`Converting Arxiv paper ${i + 1}/${arxivPapers.length}: ${article.title}`);
+        console.log(
+          `Converting Arxiv paper ${i + 1}/${arxivPapers.length}: ${article.title}`,
+        );
 
         // Update progress
-        const arxivProgress = ((i + 1) / (arxivPapers.length + (regularArticles.length > 0 ? 1 : 0))) * 100;
+        const arxivProgress =
+          ((i + 1) /
+            (arxivPapers.length + (regularArticles.length > 0 ? 1 : 0))) *
+          100;
         this.elements.progressFill.style.width = `${arxivProgress}%`;
         this.elements.progressText.textContent = `Converting Arxiv papers... ${i + 1}/${arxivPapers.length}`;
 
@@ -828,7 +841,7 @@ class ExtensionConverter {
           type: "article-queue",
           articles: [article],
           exportedAt: Date.now(),
-          version: "1.0"
+          version: "1.0",
         };
         tempParser.articles = [article];
 
@@ -839,7 +852,9 @@ class ExtensionConverter {
         const options = this._prepareConversionOptions();
 
         // Extract Arxiv ID for filename
-        const arxivIdMatch = article.url.match(/arxiv\.org\/html\/(\d+\.\d+v?\d*)/);
+        const arxivIdMatch = article.url.match(
+          /arxiv\.org\/html\/(\d+\.\d+v?\d*)/,
+        );
         const arxivId = arxivIdMatch ? arxivIdMatch[1] : `arxiv-${index}`;
 
         // Use filenamePattern for Arxiv papers
@@ -865,13 +880,15 @@ class ExtensionConverter {
         this.elements.progressText.textContent = `Converting regular articles...`;
 
         // Create parser with only regular articles
-        const regularArticleList = regularArticles.map(i => originalParser.articles[i]);
+        const regularArticleList = regularArticles.map(
+          (i) => originalParser.articles[i],
+        );
         const tempParser = new ArticleParser();
         tempParser.queueData = {
           type: "article-queue",
           articles: regularArticleList,
           exportedAt: Date.now(),
-          version: "1.0"
+          version: "1.0",
         };
         tempParser.articles = regularArticleList;
 
@@ -899,7 +916,6 @@ class ExtensionConverter {
       // Success
       this.elements.progressFill.style.width = "100%";
       this.elements.progressText.textContent = "Conversion complete!";
-
     } catch (error) {
       console.error("Conversion error:", error);
       this.elements.progressText.textContent = `Error: ${error.message}`;
@@ -976,11 +992,17 @@ class DeviceUploader {
     this.elements.cancelBrowserBtn.addEventListener("click", () =>
       this.closeBrowser(),
     );
-    this.elements.uploadHereBtn.addEventListener("click", () => this.uploadFiles());
-    this.elements.newFolderBtn.addEventListener("click", () => this.showNewFolderDialog());
+    this.elements.uploadHereBtn.addEventListener("click", () =>
+      this.uploadFiles(),
+    );
+    this.elements.newFolderBtn.addEventListener("click", () =>
+      this.showNewFolderDialog(),
+    );
 
     // Save device IP when it changes
-    this.elements.deviceIP.addEventListener("change", () => this.saveDeviceIP());
+    this.elements.deviceIP.addEventListener("change", () =>
+      this.saveDeviceIP(),
+    );
     this.elements.deviceIP.addEventListener("blur", () => this.saveDeviceIP());
   }
 
@@ -1023,7 +1045,8 @@ class DeviceUploader {
   async loadFolder(path) {
     this.currentPath = path;
     this.elements.currentPath.textContent = path || "/";
-    this.elements.folderList.innerHTML = '<div style="text-align: center; color: #93a1a1; padding: 2rem;">Loading...</div>';
+    this.elements.folderList.innerHTML =
+      '<div style="text-align: center; color: #93a1a1; padding: 2rem;">Loading...</div>';
 
     try {
       const encodedPath = encodeURIComponent(path);
@@ -1062,7 +1085,10 @@ class DeviceUploader {
     const files = items.filter((i) => i.type !== "dir");
 
     folders.forEach((item) => {
-      const fullPath = this.currentPath === "/" ? `/${item.name}` : `${this.currentPath}/${item.name}`;
+      const fullPath =
+        this.currentPath === "/"
+          ? `/${item.name}`
+          : `${this.currentPath}/${item.name}`;
       html += `
         <div style="padding: 0.75rem; border-bottom: 1px solid #eee8d5; display: flex; align-items: center; gap: 0.5rem;"
              data-path="${fullPath}" data-type="dir">
@@ -1078,7 +1104,10 @@ class DeviceUploader {
       const sizeStr = item.size
         ? `${(item.size / 1024 / 1024).toFixed(2)}MB`
         : "";
-      const fullPath = this.currentPath === "/" ? `/${item.name}` : `${this.currentPath}/${item.name}`;
+      const fullPath =
+        this.currentPath === "/"
+          ? `/${item.name}`
+          : `${this.currentPath}/${item.name}`;
       html += `
         <div style="padding: 0.75rem; border-bottom: 1px solid #eee8d5; display: flex; align-items: center; gap: 0.5rem; color: #93a1a1;">
           <span style="font-size: 1.2rem;">📄</span>
@@ -1093,40 +1122,45 @@ class DeviceUploader {
     });
 
     if (items.length === 0) {
-      html = '<div style="text-align: center; color: #93a1a1; padding: 2rem;">Empty folder</div>';
+      html =
+        '<div style="text-align: center; color: #93a1a1; padding: 2rem;">Empty folder</div>';
     }
 
     this.elements.folderList.innerHTML = html;
 
     // Add click handlers for folder navigation
-    this.elements.folderList.querySelectorAll('.folder-link').forEach((el) => {
+    this.elements.folderList.querySelectorAll(".folder-link").forEach((el) => {
       el.addEventListener("click", () => {
-        const parent = el.closest('[data-path]');
+        const parent = el.closest("[data-path]");
         const path = parent.getAttribute("data-path");
         this.loadFolder(path);
       });
     });
 
     // Add click handlers for rename buttons
-    this.elements.folderList.querySelectorAll('.rename-item-btn').forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const path = btn.getAttribute("data-path");
-        const name = btn.getAttribute("data-name");
-        const itemType = btn.getAttribute("data-item-type");
-        this.showRenameDialog(path, name, itemType);
+    this.elements.folderList
+      .querySelectorAll(".rename-item-btn")
+      .forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const path = btn.getAttribute("data-path");
+          const name = btn.getAttribute("data-name");
+          const itemType = btn.getAttribute("data-item-type");
+          this.showRenameDialog(path, name, itemType);
+        });
       });
-    });
 
     // Add click handlers for delete buttons
-    this.elements.folderList.querySelectorAll('.delete-file-btn').forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const path = btn.getAttribute("data-path");
-        const name = btn.getAttribute("data-name");
-        this.confirmDelete(path, name);
+    this.elements.folderList
+      .querySelectorAll(".delete-file-btn")
+      .forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const path = btn.getAttribute("data-path");
+          const name = btn.getAttribute("data-name");
+          this.confirmDelete(path, name);
+        });
       });
-    });
   }
 
   async uploadFiles() {
@@ -1314,7 +1348,9 @@ class DeviceUploader {
     };
 
     confirmBtn.addEventListener("click", doRename);
-    cancelBtn.addEventListener("click", () => document.body.removeChild(dialog));
+    cancelBtn.addEventListener("click", () =>
+      document.body.removeChild(dialog),
+    );
     input.addEventListener("keydown", (e) => {
       if (e.key === "Enter") doRename();
       if (e.key === "Escape") document.body.removeChild(dialog);
@@ -1324,14 +1360,15 @@ class DeviceUploader {
   async renameItem(oldPath, newName) {
     // Calculate new full path (same directory, new name)
     const parentPath = oldPath.substring(0, oldPath.lastIndexOf("/"));
-    const newPath = parentPath === "" ? `/${newName}` : `${parentPath}/${newName}`;
+    const newPath =
+      parentPath === "" ? `/${newName}` : `${parentPath}/${newName}`;
 
     console.log(`Renaming ${oldPath} to ${newPath}`);
 
     try {
       const formData = new FormData();
-      formData.append("src", oldPath);   // source (old path)
-      formData.append("path", newPath);  // destination (new path)
+      formData.append("src", oldPath); // source (old path)
+      formData.append("path", newPath); // destination (new path)
 
       const response = await fetch(`http://${this.deviceIP}/edit`, {
         method: "PUT",
@@ -1396,7 +1433,9 @@ class DeviceUploader {
     };
 
     confirmBtn.addEventListener("click", doCreate);
-    cancelBtn.addEventListener("click", () => document.body.removeChild(dialog));
+    cancelBtn.addEventListener("click", () =>
+      document.body.removeChild(dialog),
+    );
     input.addEventListener("keydown", (e) => {
       if (e.key === "Enter") doCreate();
       if (e.key === "Escape") document.body.removeChild(dialog);
@@ -1404,7 +1443,10 @@ class DeviceUploader {
   }
 
   async createFolder(folderName) {
-    const newPath = this.currentPath === "/" ? `/${folderName}` : `${this.currentPath}/${folderName}`;
+    const newPath =
+      this.currentPath === "/"
+        ? `/${folderName}`
+        : `${this.currentPath}/${folderName}`;
     // Add trailing slash to indicate it's a directory
     const folderPath = newPath.endsWith("/") ? newPath : `${newPath}/`;
     console.log(`Creating folder: ${folderPath}`);
@@ -1466,11 +1508,7 @@ class DeviceUploader {
     this.elements.deviceStatus.style.display = "block";
     this.elements.deviceStatus.textContent = message;
     this.elements.deviceStatus.style.backgroundColor =
-      type === "success"
-        ? "#859900"
-        : type === "error"
-          ? "#dc322f"
-          : "#268bd2";
+      type === "success" ? "#859900" : type === "error" ? "#dc322f" : "#268bd2";
     this.elements.deviceStatus.style.color = "#fff";
   }
 }

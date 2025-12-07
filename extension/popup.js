@@ -7,7 +7,7 @@ let currentQueue = [];
 // DOM elements
 const elements = {
   addCurrent: document.getElementById("add-current"),
-  openEpub: document.getElementById("open-epub"),
+  openPwa: document.getElementById("open-pwa"),
   openViewer: document.getElementById("open-viewer"),
   openConverter: document.getElementById("open-converter"),
   clearQueue: document.getElementById("clear-queue"),
@@ -50,7 +50,7 @@ function renderQueue() {
   elements.readingTime.textContent = `${readingMinutes} min read`;
 
   // Enable/disable buttons
-  elements.openIn2x4.disabled = count === 0;
+  // elements.openConverter.disabled = count === 0; // Removed as requested
   elements.clearQueue.disabled = count === 0;
 
   // Show empty state or list
@@ -140,7 +140,9 @@ function createQueueItem(article, index) {
 // Setup event listeners
 function setupEventListeners() {
   elements.addCurrent.addEventListener("click", addCurrentPage);
-  elements.openIn2x4.addEventListener("click", openIn2x4);
+  elements.openPwa.addEventListener("click", openPwa);
+  elements.openViewer.addEventListener("click", openViewer);
+  elements.openConverter.addEventListener("click", openConverter);
   elements.clearQueue.addEventListener("click", clearQueue);
 }
 
@@ -176,11 +178,37 @@ async function addCurrentPage() {
   }
 }
 
-// Open in 2X4 Converter
-async function openIn2x4() {
+// Open main PWA (index.html)
+async function openPwa() {
   try {
-    elements.openIn2x4.disabled = true;
-    elements.openIn2x4.innerHTML = "<span>🚀</span>Opening...";
+    // Open standard index.html relative to extension root
+    // Note: This assumes popup.html is in extension/ and index.html is in root
+    const url = chrome.runtime.getURL("index.html");
+    await chrome.tabs.create({ url });
+    window.close();
+  } catch (error) {
+    console.error("Error opening PWA:", error);
+    alert("Failed to open PWA: " + error.message);
+  }
+}
+
+// Open XTC Viewer (viewer.html)
+async function openViewer() {
+  try {
+    const url = chrome.runtime.getURL("viewer.html");
+    await chrome.tabs.create({ url });
+    window.close();
+  } catch (error) {
+    console.error("Error opening Viewer:", error);
+    alert("Failed to open Viewer: " + error.message);
+  }
+}
+
+// Open Converter (converter.html)
+async function openConverter() {
+  try {
+    elements.openConverter.disabled = true;
+    elements.openConverter.innerHTML = "<span>🚀</span>Opening...";
 
     // Get the extension converter URL
     const url = chrome.runtime.getURL("extension/converter.html");
@@ -189,15 +217,15 @@ async function openIn2x4() {
     await chrome.tabs.create({ url });
 
     // Show success feedback briefly
-    elements.openIn2x4.innerHTML = "<span>✓</span>Opened!";
+    elements.openConverter.innerHTML = "<span>✓</span>Opened!";
     setTimeout(() => {
       window.close(); // Close popup
     }, 500);
   } catch (error) {
-    console.error("Error opening 2X4:", error);
-    alert("Failed to open 2X4: " + error.message);
-    elements.openIn2x4.innerHTML = "<span>🚀</span>Open in 2X4";
-    elements.openIn2x4.disabled = false;
+    console.error("Error opening Converter:", error);
+    alert("Failed to open Converter: " + error.message);
+    elements.openConverter.innerHTML = "<span>🚀</span>Open Converter";
+    elements.openConverter.disabled = false;
   }
 }
 

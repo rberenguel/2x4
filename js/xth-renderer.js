@@ -36,7 +36,9 @@ export class XTHRenderer {
     // Check magic number "XTH\0"
     const magic = view.getUint32(0, false);
     if (magic !== 0x58544800) {
-      throw new Error(`Invalid XTH file: magic is 0x${magic.toString(16)}, expected 0x58544800`);
+      throw new Error(
+        `Invalid XTH file: magic is 0x${magic.toString(16)}, expected 0x58544800`,
+      );
     }
 
     return {
@@ -107,7 +109,7 @@ export class XTHRenderer {
    * @param {number} height
    */
   static drawPixels(canvas, pixels, width, height) {
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     const imageData = ctx.createImageData(width, height);
     const data = imageData.data;
 
@@ -116,10 +118,10 @@ export class XTHRenderer {
       const grayscale = this.pixelToGrayscale(pixelValue);
 
       const dataIndex = i * 4;
-      data[dataIndex] = grayscale;     // R
+      data[dataIndex] = grayscale; // R
       data[dataIndex + 1] = grayscale; // G
       data[dataIndex + 2] = grayscale; // B
-      data[dataIndex + 3] = 255;       // A
+      data[dataIndex + 3] = 255; // A
     }
 
     ctx.putImageData(imageData, 0, 0);
@@ -138,11 +140,11 @@ export class XTHRenderer {
     // 3 → White (255)
     switch (pixelValue) {
       case 0:
-        return 0;   // Black
+        return 0; // Black
       case 1:
         return 170; // Light Gray
       case 2:
-        return 85;  // Dark Gray
+        return 85; // Dark Gray
       case 3:
         return 255; // White
       default:

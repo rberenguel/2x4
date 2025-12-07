@@ -27,19 +27,36 @@
         </header>
 
         <!-- Extension Feature Note -->
-        <div style="
-          background: #eee8d5;
-          border-left: 4px solid #268bd2;
-          padding: 0.75rem 1rem;
-          margin-bottom: 1rem;
-          border-radius: 4px;
-        ">
-          <p style="margin: 0; font-size: 0.85rem; line-height: 1.4; color: #586e75;">
-            <strong style="color: #268bd2;">💡 Tip:</strong> The
-            <a href="https://github.com/rberenguel/2x4?tab=readme-ov-file#chrome-extension-web-articles"
-               target="_blank"
-               style="color: #268bd2; text-decoration: underline; font-weight: bold;">Chrome extension</a>
-            has additional features including device file management (WiFi upload, browse, rename, delete files).
+        <div
+          style="
+            background: #eee8d5;
+            border-left: 4px solid #268bd2;
+            padding: 0.75rem 1rem;
+            margin-bottom: 1rem;
+            border-radius: 4px;
+          "
+        >
+          <p
+            style="
+              margin: 0;
+              font-size: 0.85rem;
+              line-height: 1.4;
+              color: #586e75;
+            "
+          >
+            <strong style="color: #268bd2">💡 Tip:</strong> The
+            <a
+              href="https://github.com/rberenguel/2x4?tab=readme-ov-file#chrome-extension-web-articles"
+              target="_blank"
+              style="
+                color: #268bd2;
+                text-decoration: underline;
+                font-weight: bold;
+              "
+              >Chrome extension</a
+            >
+            has additional features including device file management (WiFi
+            upload, browse, rename, delete files).
           </p>
         </div>
 
@@ -627,26 +644,12 @@ pre, code { white-space: pre-wrap; word-wrap: break-word; }"
     <div id="virtual-device" class="virtual-device"></div>
 
     <!-- Scripts -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- Scripts -->
+    <script src="js/lib/jszip.min.js"></script>
     <script src="js/html2canvas.min.js"></script>
 
     <!-- Hyphenopoly Configuration -->
-    <script>
-      var Hyphenopoly = {
-        require: {
-          "en-us": "FORCEHYPHENOPOLY",
-        },
-        setup: {
-          selectors: {
-            "#virtual-device p": {},
-          },
-        },
-        paths: {
-          patterndir: "js/patterns/",
-          maindir: "js/",
-        },
-      };
-    </script>
+    <script src="js/hyphenopoly-config.js"></script>
     <script src="js/Hyphenopoly_Loader.js"></script>
 
     <script type="module" src="js/main.js"></script>

@@ -136,6 +136,7 @@ A browser-based PWA and Chrome extension that converts EPUB files, ArXiv papers,
 ### 3. View XTC Files
 
 1. **Open viewer:**
+
    - Press `v` keyboard shortcut in PWA or extension to open viewer in new tab
    - Or navigate directly to `viewer.html`
 
@@ -152,14 +153,17 @@ A browser-based PWA and Chrome extension that converts EPUB files, ArXiv papers,
 ### 4. Transfer to Device
 
 **Recommended method (Extension users):**
+
 - Use the built-in WiFi file manager (see Extension Device File Manager below)
 - Connect to device WiFi hotspot, upload files directly
 
 **Alternative methods:**
+
 - **SD Card:** Remove SD card from device, copy files via card reader
 - **Third-party apps:** Use apps like [Hojo](https://github.com/meta-boy/hojo) (unaffiliated) for WiFi transfer
 
 **Supported formats:**
+
 - **XTC format:** Recommended - native X4 format with chapters
 - **EPUB format:** Currently unsupported by device firmware (as of 2024-12-04)
 - **ZIP format:** Individual images (not recommended - no chapters, harder to navigate)
@@ -179,11 +183,13 @@ By default, XTC export creates a **single file** containing the entire book. For
 The Chrome extension includes a WiFi-based file manager for the Xteink X4 device:
 
 1. **Connect to device:**
+
    - Enable WiFi hotspot on X4 device (SSID: "E-Paper", password: "12345678")
    - Connect your computer to the device hotspot
    - Enter device IP (default: 192.168.3.3) in extension
 
 2. **Browse and manage files:**
+
    - Click "Manage files on device" to open file browser
    - Navigate folders by clicking folder names
    - Use ".." to go up one level

@@ -27,7 +27,11 @@ export class XTCParser {
       this.parseMetadata();
     }
 
-    if (this.header.hasChapters && this.metadata && this.metadata.chapterCount > 0) {
+    if (
+      this.header.hasChapters &&
+      this.metadata &&
+      this.metadata.chapterCount > 0
+    ) {
       this.parseChapters();
     }
 
@@ -42,10 +46,10 @@ export class XTCParser {
     const magic = String.fromCharCode(
       this.view.getUint8(0),
       this.view.getUint8(1),
-      this.view.getUint8(2)
+      this.view.getUint8(2),
     );
 
-    if (magic !== 'XTC') {
+    if (magic !== "XTC") {
       throw new Error(`Invalid XTC file: magic is "${magic}", expected "XTC"`);
     }
 
@@ -64,7 +68,7 @@ export class XTCParser {
       thumbOffset: Number(this.view.getBigUint64(40, true)),
     };
 
-    console.log('XTC Header:', this.header);
+    console.log("XTC Header:", this.header);
   }
 
   /**
@@ -72,33 +76,37 @@ export class XTCParser {
    */
   parseMetadata() {
     const offset = this.header.metadataOffset;
-    const decoder = new TextDecoder('utf-8');
+    const decoder = new TextDecoder("utf-8");
 
     // Title (128 bytes, 0x00-0x7F)
     const titleBytes = this.data.slice(offset, offset + 128);
     const titleEnd = titleBytes.indexOf(0);
-    const title = decoder.decode(titleBytes.slice(0, titleEnd === -1 ? 128 : titleEnd));
+    const title = decoder.decode(
+      titleBytes.slice(0, titleEnd === -1 ? 128 : titleEnd),
+    );
 
     // Author (64 bytes, 0x80-0xBF)
     const authorBytes = this.data.slice(offset + 0x80, offset + 0x80 + 64);
     const authorEnd = authorBytes.indexOf(0);
-    const author = decoder.decode(authorBytes.slice(0, authorEnd === -1 ? 64 : authorEnd));
+    const author = decoder.decode(
+      authorBytes.slice(0, authorEnd === -1 ? 64 : authorEnd),
+    );
 
     // Timestamp (0xF0-0xF3)
-    const timestamp = this.view.getUint32(offset + 0xF0, true);
+    const timestamp = this.view.getUint32(offset + 0xf0, true);
 
     // Chapter count (0xF6-0xF7)
-    const chapterCount = this.view.getUint16(offset + 0xF6, true);
+    const chapterCount = this.view.getUint16(offset + 0xf6, true);
 
     this.metadata = {
-      title: title || 'Untitled',
-      author: author || 'Unknown',
+      title: title || "Untitled",
+      author: author || "Unknown",
       timestamp: timestamp,
       createTime: new Date(timestamp * 1000),
       chapterCount: chapterCount,
     };
 
-    console.log('XTC Metadata:', this.metadata);
+    console.log("XTC Metadata:", this.metadata);
   }
 
   /**
@@ -107,7 +115,7 @@ export class XTCParser {
   parseChapters() {
     const chaptersOffset = this.header.metadataOffset + 256;
     const chapterCount = this.metadata.chapterCount;
-    const decoder = new TextDecoder('utf-8');
+    const decoder = new TextDecoder("utf-8");
 
     for (let i = 0; i < chapterCount; i++) {
       const chapterOffset = chaptersOffset + i * 96;
@@ -115,7 +123,9 @@ export class XTCParser {
       // Chapter name (80 bytes, 0x00-0x4F)
       const nameBytes = this.data.slice(chapterOffset, chapterOffset + 80);
       const nameEnd = nameBytes.indexOf(0);
-      const name = decoder.decode(nameBytes.slice(0, nameEnd === -1 ? 80 : nameEnd));
+      const name = decoder.decode(
+        nameBytes.slice(0, nameEnd === -1 ? 80 : nameEnd),
+      );
 
       // Start page (0x50-0x51)
       const startPage = this.view.getUint16(chapterOffset + 0x50, true);
@@ -130,7 +140,7 @@ export class XTCParser {
       });
     }
 
-    console.log('XTC Chapters:', this.chapters);
+    console.log("XTC Chapters:", this.chapters);
   }
 
   /**
