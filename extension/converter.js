@@ -491,12 +491,12 @@ class ExtensionConverter {
     const pageInfo = this.paginator.getPageInfo();
 
     this.elements.chapterTitle.textContent = title;
-    this.elements.pageInfo.textContent = `Article ${this.currentChapterIndex + 1}/${this.articleParser.articles.length} • Page ${pageInfo.currentPage}/${pageInfo.totalPages}`;
+    this.elements.pageInfo.textContent = `Chapter ${this.currentChapterIndex + 1}/${this.articleParser.getChapterCount()} • Page ${pageInfo.currentPage}/${pageInfo.totalPages}`;
   }
 
   updateNavigationButtons() {
     const pageInfo = this.paginator.getPageInfo();
-    const totalChapters = this.articleParser.articles.length;
+    const totalChapters = this.articleParser.getChapterCount();
 
     this.elements.prevPageBtn.disabled = !pageInfo.hasPrevPage;
     this.elements.nextPageBtn.disabled = !pageInfo.hasNextPage;
@@ -530,7 +530,7 @@ class ExtensionConverter {
   }
 
   async nextChapter() {
-    if (this.currentChapterIndex < this.articleParser.articles.length - 1) {
+    if (this.currentChapterIndex < this.articleParser.getChapterCount() - 1) {
       await this.loadChapter(this.currentChapterIndex + 1);
     }
   }
@@ -579,7 +579,7 @@ class ExtensionConverter {
    * Pre-paginate all chapters
    */
   async prePaginateAll() {
-    const totalChapters = this.articleParser.articles.length;
+    const totalChapters = this.articleParser.getChapterCount();
     this.pageMap = [];
     this.totalPages = 0;
 
@@ -706,7 +706,7 @@ class ExtensionConverter {
       metadata,
       getChapterContent,
       getChapterTitle,
-      totalChapters: this.articleParser.articles.length,
+      totalChapters: this.articleParser.getChapterCount(),
       suppressChapterMarkers: false,
       enableProgressBars: this.elements.enableProgressBars.checked,
       pageMap: this.pageMap || null,
@@ -964,6 +964,7 @@ class DeviceUploader {
     this.deviceIP = "192.168.3.3";
     this.currentPath = "/";
     this.pendingFiles = []; // {blob, filename}
+    this.previewCache = new Map(); // Cache previews by filename
 
     this.elements = {
       deviceIP: document.getElementById("device-ip"),
@@ -976,6 +977,10 @@ class DeviceUploader {
       newFolderBtn: document.getElementById("new-folder-btn"),
       currentPath: document.getElementById("current-path"),
       folderList: document.getElementById("folder-list"),
+      previewModal: document.getElementById("xtc-preview-modal"),
+      closePreviewBtn: document.getElementById("close-preview-btn"),
+      previewFilename: document.getElementById("preview-filename"),
+      previewContent: document.getElementById("preview-content"),
     };
 
     this.loadDeviceIP();
@@ -1004,6 +1009,15 @@ class DeviceUploader {
       this.saveDeviceIP(),
     );
     this.elements.deviceIP.addEventListener("blur", () => this.saveDeviceIP());
+
+    // Preview modal close
+    this.elements.closePreviewBtn.addEventListener("click", () =>
+      this.closePreview(),
+    );
+  }
+
+  closePreview() {
+    this.elements.previewModal.style.display = "none";
   }
 
   async openBrowser() {
@@ -1108,11 +1122,16 @@ class DeviceUploader {
         this.currentPath === "/"
           ? `/${item.name}`
           : `${this.currentPath}/${item.name}`;
+      const isXTC = item.name.toLowerCase().endsWith(".xtc") ||
+                    item.name.toLowerCase().endsWith(".xtch");
+
       html += `
         <div style="padding: 0.75rem; border-bottom: 1px solid #eee8d5; display: flex; align-items: center; gap: 0.5rem; color: #93a1a1;">
           <span style="font-size: 1.2rem;">📄</span>
           <span style="flex: 1;">${item.name}</span>
           <span style="font-size: 0.85rem;">${sizeStr}</span>
+          ${isXTC ? `<button class="preview-file-btn" data-path="${fullPath}" data-name="${item.name}"
+                  style="background: none; border: none; color: #268bd2; cursor: pointer; font-size: 1.2rem; padding: 0.25rem 0.5rem;" title="Preview">👁️</button>` : ''}
           <button class="rename-item-btn" data-path="${fullPath}" data-name="${item.name}" data-item-type="file"
                   style="background: none; border: none; color: #268bd2; cursor: pointer; font-size: 1rem; padding: 0.25rem 0.5rem;">✏️</button>
           <button class="delete-file-btn" data-path="${fullPath}" data-name="${item.name}"
@@ -1159,6 +1178,18 @@ class DeviceUploader {
           const path = btn.getAttribute("data-path");
           const name = btn.getAttribute("data-name");
           this.confirmDelete(path, name);
+        });
+      });
+
+    // Add click handlers for preview buttons
+    this.elements.folderList
+      .querySelectorAll(".preview-file-btn")
+      .forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const path = btn.getAttribute("data-path");
+          const name = btn.getAttribute("data-name");
+          this.showXTCPreview(path, name);
         });
       });
   }
@@ -1502,6 +1533,105 @@ class DeviceUploader {
       localStorage.setItem("deviceIP", ip);
       this.deviceIP = ip;
     }
+  }
+
+  /**
+   * Show XTC file preview (first page only)
+   * Efficient: downloads only header + first page (~5-10KB)
+   */
+  async showXTCPreview(filePath, filename) {
+    // Check cache first
+    if (this.previewCache.has(filename)) {
+      this.displayPreview(filename, this.previewCache.get(filename));
+      return;
+    }
+
+    // Show preview modal with loading state
+    this.elements.previewFilename.textContent = filename;
+    this.elements.previewContent.innerHTML =
+      '<div style="text-align: center; color: #93a1a1">Loading preview...</div>';
+    this.elements.previewModal.style.display = "block";
+
+    try {
+      // Fetch file but abort after reading first 100KB
+      const controller = new AbortController();
+      const signal = controller.signal;
+
+      const response = await fetch(
+        `http://${this.deviceIP}${filePath}?download=true`,
+        { signal },
+      );
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const reader = response.body.getReader();
+      const chunks = [];
+      let bytesRead = 0;
+      const maxBytes = 100 * 1024; // 100KB limit
+
+      try {
+        while (bytesRead < maxBytes) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          chunks.push(value);
+          bytesRead += value.length;
+
+          if (bytesRead >= maxBytes) {
+            controller.abort();
+            break;
+          }
+        }
+      } catch (err) {
+        if (err.name !== "AbortError") throw err;
+      } finally {
+        reader.releaseLock();
+      }
+
+      // Combine chunks into single ArrayBuffer
+      const arrayBuffer = new Uint8Array(bytesRead);
+      let offset = 0;
+      for (const chunk of chunks) {
+        arrayBuffer.set(chunk, offset);
+        offset += chunk.length;
+      }
+
+      console.log(`Preview: Read ${bytesRead} bytes, aborted connection`);
+
+      // Use existing XTCParser and XTHRenderer (they already work!)
+      const { XTCParser } = await import("../js/xtc-parser.js");
+      const { XTHRenderer } = await import("../js/xth-renderer.js");
+
+      const parser = new XTCParser(arrayBuffer.buffer);
+
+      // Get first page data (XTH format with header)
+      const pageData = parser.getPageData(0);
+
+      // Render using existing renderer
+      const canvas = document.createElement("canvas");
+      XTHRenderer.renderToCanvas(pageData, canvas);
+
+      // Cache the canvas data URL
+      const dataURL = canvas.toDataURL();
+      this.previewCache.set(filename, dataURL);
+
+      // Display preview
+      this.displayPreview(filename, dataURL);
+    } catch (error) {
+      console.error("Preview error:", error);
+      this.elements.previewContent.innerHTML = `
+        <div style="text-align: center; color: #dc322f">
+          <p>Failed to load preview</p>
+          <p style="font-size: 0.85em; color: #586e75">${error.message}</p>
+        </div>
+      `;
+    }
+  }
+
+  displayPreview(filename, dataURL) {
+    this.elements.previewFilename.textContent = filename;
+    this.elements.previewContent.innerHTML = `
+      <img src="${dataURL}" style="max-width: 100%; max-height: 100%; border: 1px solid #93a1a1;" />
+    `;
   }
 
   showStatus(message, type) {

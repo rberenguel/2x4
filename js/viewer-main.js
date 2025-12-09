@@ -23,6 +23,8 @@ class XTCViewer {
       controls: document.getElementById("controls"),
       prevBtn: document.getElementById("prevBtn"),
       nextBtn: document.getElementById("nextBtn"),
+      prevChapterBtn: document.getElementById("prevChapterBtn"),
+      nextChapterBtn: document.getElementById("nextChapterBtn"),
       pageInfo: document.getElementById("pageInfo"),
       sizeCalibration: document.getElementById("sizeCalibration"),
       sizeCalibrationValue: document.getElementById("sizeCalibrationValue"),
@@ -38,6 +40,12 @@ class XTCViewer {
     );
     this.elements.prevBtn.addEventListener("click", () => this.prevPage());
     this.elements.nextBtn.addEventListener("click", () => this.nextPage());
+    this.elements.prevChapterBtn.addEventListener("click", () =>
+      this.prevChapter(),
+    );
+    this.elements.nextChapterBtn.addEventListener("click", () =>
+      this.nextChapter(),
+    );
 
     // Metadata toggle
     this.elements.metadataToggle.addEventListener("click", () => {
@@ -207,6 +215,67 @@ class XTCViewer {
     this.goToPage(this.currentPage - 1);
   }
 
+  /**
+   * Navigate to the previous chapter
+   */
+  prevChapter() {
+    if (!this.parser || !this.parser.chapters || this.parser.chapters.length === 0) {
+      return;
+    }
+
+    // Find the current chapter
+    const currentChapter = this.findCurrentChapter();
+    if (currentChapter === null || currentChapter === 0) {
+      // Already at first chapter, go to first page
+      this.goToPage(0);
+      return;
+    }
+
+    // Go to the start of the previous chapter
+    const prevChapter = this.parser.chapters[currentChapter - 1];
+    this.goToPage(prevChapter.startPage);
+  }
+
+  /**
+   * Navigate to the next chapter
+   */
+  nextChapter() {
+    if (!this.parser || !this.parser.chapters || this.parser.chapters.length === 0) {
+      return;
+    }
+
+    // Find the current chapter
+    const currentChapter = this.findCurrentChapter();
+    if (currentChapter === null || currentChapter >= this.parser.chapters.length - 1) {
+      // Already at last chapter or no chapters, go to last page
+      this.goToPage(this.parser.pageIndex.length - 1);
+      return;
+    }
+
+    // Go to the start of the next chapter
+    const nextChapter = this.parser.chapters[currentChapter + 1];
+    this.goToPage(nextChapter.startPage);
+  }
+
+  /**
+   * Find which chapter the current page belongs to
+   * @returns {number|null} - Chapter index or null if no chapters
+   */
+  findCurrentChapter() {
+    if (!this.parser || !this.parser.chapters || this.parser.chapters.length === 0) {
+      return null;
+    }
+
+    // Find the chapter that contains the current page
+    for (let i = this.parser.chapters.length - 1; i >= 0; i--) {
+      if (this.currentPage >= this.parser.chapters[i].startPage) {
+        return i;
+      }
+    }
+
+    return 0; // Default to first chapter
+  }
+
   renderCurrentPage() {
     try {
       // Get XTH data for current page
@@ -231,9 +300,22 @@ class XTCViewer {
     // Update page info
     this.elements.pageInfo.textContent = `Page ${this.currentPage + 1} / ${pageCount}`;
 
-    // Update button states
+    // Update page button states
     this.elements.prevBtn.disabled = this.currentPage === 0;
     this.elements.nextBtn.disabled = this.currentPage === pageCount - 1;
+
+    // Update chapter button states
+    const hasChapters = this.parser.chapters && this.parser.chapters.length > 0;
+    if (hasChapters) {
+      const currentChapter = this.findCurrentChapter();
+      this.elements.prevChapterBtn.disabled = currentChapter === null || currentChapter === 0;
+      this.elements.nextChapterBtn.disabled =
+        currentChapter === null || currentChapter >= this.parser.chapters.length - 1;
+    } else {
+      // No chapters - disable chapter navigation
+      this.elements.prevChapterBtn.disabled = true;
+      this.elements.nextChapterBtn.disabled = true;
+    }
   }
 }
 

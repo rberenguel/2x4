@@ -8,6 +8,8 @@ export class ArticleParser {
     this.queueData = null;
     this.articles = [];
     this.metadata = null;
+    this.includeTOC = true; // Include table of contents by default
+    this.tocIndexes = { start: null, end: null }; // Track TOC chapter indexes
   }
 
   /**
@@ -55,7 +57,7 @@ export class ArticleParser {
 
       return {
         metadata: this.metadata,
-        chapterCount: this.articles.length,
+        chapterCount: this.getChapterCount(),
       };
     } catch (error) {
       if (error instanceof SyntaxError) {
@@ -109,14 +111,60 @@ export class ArticleParser {
   }
 
   /**
-   * Get chapter content (each article is a chapter)
-   * @param {number} index - Article index (0-based)
+   * Generate table of contents HTML
+   * @returns {string} - TOC HTML content
+   */
+  generateTOC() {
+    const entries = this.articles.map((article, index) => {
+      const title = article.title || `Article ${index + 1}`;
+      const domain = article.siteName || this._extractDomain(article.url) || "Unknown";
+
+      return `
+        <div class="toc-entry">
+          <div class="toc-title">${this.escapeHtml(title)}</div>
+          <div class="toc-domain">(${this.escapeHtml(domain)})</div>
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <div class="table-of-contents">
+        <div class="toc-list">
+          ${entries}
+        </div>
+        <div class="toc-footer">
+          <p>${this.articles.length} article${this.articles.length !== 1 ? 's' : ''}</p>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Extract domain from URL
+   * @param {string} url - URL to extract domain from
+   * @returns {string} - Domain or empty string
+   */
+  _extractDomain(url) {
+    if (!url) return '';
+    try {
+      const urlObj = new URL(url);
+      return urlObj.hostname.replace(/^www\./, '');
+    } catch {
+      return '';
+    }
+  }
+
+  /**
+   * Get chapter content (each article is a chapter, with TOC at start and end)
+   * @param {number} index - Chapter index (0-based, includes TOC chapters)
    * @returns {string} - HTML content
    */
   async getChapterContent(index) {
-    if (index < 0 || index >= this.articles.length) {
+    const totalChapters = this.getChapterCount();
+
+    if (index < 0 || index >= totalChapters) {
       throw new Error(
-        `Article index ${index} out of range (0-${this.articles.length - 1})`,
+        `Chapter index ${index} out of range (0-${totalChapters - 1})`,
       );
     }
 
@@ -124,11 +172,23 @@ export class ArticleParser {
       throw new Error("No queue loaded");
     }
 
-    const article = this.articles[index];
+    // First chapter: TOC
+    if (this.includeTOC && index === 0) {
+      return this.generateTOC();
+    }
+
+    // Last chapter: TOC
+    if (this.includeTOC && index === totalChapters - 1) {
+      return this.generateTOC();
+    }
+
+    // Regular article chapter (offset by 1 if TOC is included)
+    const articleIndex = this.includeTOC ? index - 1 : index;
+    const article = this.articles[articleIndex];
 
     // Wrap content in article container with metadata header
     return `
-      <article class="web-article" data-article-id="${article.id || index}">
+      <article class="web-article" data-article-id="${article.id || articleIndex}">
         <header class="article-header">
           <h1 class="article-title">${this.escapeHtml(article.title)}</h1>
           ${article.byline ? `<p class="article-byline">by ${this.escapeHtml(article.byline)}</p>` : ""}
@@ -143,27 +203,79 @@ export class ArticleParser {
   }
 
   /**
-   * Get chapter title (article title)
-   * @param {number} index - Article index
-   * @returns {string} - Article title
+   * Get total chapter count (includes TOC chapters if enabled)
+   * @returns {number} - Total chapters
    */
-  getChapterTitle(index) {
-    if (index < 0 || index >= this.articles.length) {
-      return "";
+  getChapterCount() {
+    if (!this.includeTOC) {
+      return this.articles.length;
     }
-    return this.articles[index].title || `Article ${index + 1}`;
+    // TOC at start + articles + TOC at end
+    return this.articles.length + 2;
   }
 
   /**
-   * Get spine (list of articles as chapters)
+   * Get chapter title (article title or TOC title)
+   * @param {number} index - Chapter index (includes TOC)
+   * @returns {string} - Chapter title
+   */
+  getChapterTitle(index) {
+    const totalChapters = this.getChapterCount();
+
+    if (index < 0 || index >= totalChapters) {
+      return "";
+    }
+
+    // First chapter: TOC
+    if (this.includeTOC && index === 0) {
+      return "Table of Contents";
+    }
+
+    // Last chapter: TOC
+    if (this.includeTOC && index === totalChapters - 1) {
+      return "Table of Contents";
+    }
+
+    // Regular article
+    const articleIndex = this.includeTOC ? index - 1 : index;
+    return this.articles[articleIndex]?.title || `Article ${articleIndex + 1}`;
+  }
+
+  /**
+   * Get spine (list of articles as chapters, includes TOC)
    * @returns {Array} - Array of chapter objects
    */
   get spine() {
-    return this.articles.map((article, index) => ({
-      id: article.id || `article-${index}`,
-      href: `article-${index}.html`,
-      title: article.title || `Article ${index + 1}`,
-    }));
+    const chapters = [];
+
+    if (this.includeTOC) {
+      // Add starting TOC
+      chapters.push({
+        id: 'toc-start',
+        href: 'toc-start.html',
+        title: 'Table of Contents',
+      });
+    }
+
+    // Add articles
+    this.articles.forEach((article, index) => {
+      chapters.push({
+        id: article.id || `article-${index}`,
+        href: `article-${index}.html`,
+        title: article.title || `Article ${index + 1}`,
+      });
+    });
+
+    if (this.includeTOC) {
+      // Add ending TOC
+      chapters.push({
+        id: 'toc-end',
+        href: 'toc-end.html',
+        title: 'Table of Contents',
+      });
+    }
+
+    return chapters;
   }
 
   /**

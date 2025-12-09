@@ -199,9 +199,9 @@ export class Renderer {
   }
 
   /**
-   * Draw progress bars at the top of the canvas
+   * Draw progress bars at the top of the canvas (10px from top)
    * Layout (top to bottom):
-   * - Chapter markers (vertical ticks, 4px tall)
+   * - Chapter markers (vertical ticks, 2px tall)
    * - Book progress bar (horizontal, 2px tall)
    * - Chapter progress bar (horizontal, 2px tall)
    *
@@ -225,12 +225,16 @@ export class Renderer {
     );
 
     const ctx = canvas.getContext("2d");
-    const tickHeight = 2; // Height of chapter marker ticks (same as progress bars)
+    const tickHeight = 2; // Height of chapter marker ticks
     const barHeight = 2; // Height of each progress bar
-    const bookBarY = tickHeight; // Book bar starts after ticks
-    const chapterBarY = tickHeight + barHeight; // Chapter bar below book bar
+    const topOffset = 10; // Start 10px from top
 
-    // Chapter boundary markers - vertical ticks at the very top
+    // Position from top of canvas
+    const ticksY = topOffset; // y=10
+    const bookBarY = topOffset + tickHeight; // y=12
+    const chapterBarY = topOffset + tickHeight + barHeight; // y=14
+
+    // Chapter boundary markers - vertical ticks at the top
     if (chapterMarkers && chapterMarkers.length > 0) {
       ctx.strokeStyle = "#000000"; // Pure black
       ctx.lineWidth = 1;
@@ -238,8 +242,8 @@ export class Renderer {
       for (const marker of chapterMarkers) {
         const x = Math.round(canvas.width * marker);
         ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, tickHeight);
+        ctx.moveTo(x, ticksY);
+        ctx.lineTo(x, ticksY + tickHeight);
         ctx.stroke();
       }
     }
@@ -253,7 +257,7 @@ export class Renderer {
     ctx.fillRect(0, chapterBarY, canvas.width * chapterProgress, barHeight);
 
     console.log(
-      "Progress bars drawn - book bar width:",
+      "Progress bars drawn at top (10px offset) - book bar width:",
       canvas.width * bookProgress,
       "chapter bar width:",
       canvas.width * chapterProgress,
