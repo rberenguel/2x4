@@ -227,12 +227,12 @@ export class Renderer {
     const ctx = canvas.getContext("2d");
     const tickHeight = 2; // Height of chapter marker ticks
     const barHeight = 2; // Height of each progress bar
-    const topOffset = 10; // Start 10px from top
+    const topOffset = 12; // Start 12px from top
 
     // Position from top of canvas
-    const ticksY = topOffset; // y=10
-    const bookBarY = topOffset + tickHeight; // y=12
-    const chapterBarY = topOffset + tickHeight + barHeight; // y=14
+    const ticksY = topOffset; // y=12
+    const bookBarY = topOffset + tickHeight; // y=14
+    const chapterBarY = topOffset + tickHeight + barHeight; // y=16
 
     // Chapter boundary markers - vertical ticks at the top
     if (chapterMarkers && chapterMarkers.length > 0) {

@@ -45,7 +45,8 @@ h1 {
 }
 
 .quick-actions {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
   padding: 12px;
   background: #eee8d5;

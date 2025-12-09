@@ -1,7 +1,7 @@
 {
   "name": "2X4",
   "short_name": "2X4",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Convert EPUB and Arxiv papers to images for Xteink X4 e-readers",
   "start_url": "/",
   "display": "standalone",

@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Device Manager - 2X4</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+
+    <!-- Reuse existing styles -->
+    <link rel="stylesheet" href="fonts/inter.css" />
+    <link rel="stylesheet" href="fonts/monoid.css" />
+    <link rel="stylesheet" href="fonts/reforma.css" />
+    <link rel="stylesheet" href="css/style.css" />
+
+    <style>
+      body {
+        margin: 0;
+        padding: 2rem;
+        background: var(--base3);
+      }
+
+      .manager-container {
+        max-width: 800px;
+        margin: 0 auto;
+      }
+
+      .header {
+        margin-bottom: 2rem;
+      }
+
+      .header h1 {
+        margin: 0 0 0.5rem 0;
+        color: var(--base01);
+        font-size: 2rem;
+      }
+
+      .header p {
+        margin: 0;
+        color: var(--base1);
+        font-size: 0.9rem;
+      }
+
+      .connection-card {
+        background: white;
+        border: 1px solid var(--base2);
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .connection-card h2 {
+        margin: 0 0 1rem 0;
+        color: var(--base01);
+        font-size: 1.2rem;
+      }
+
+      .control-group {
+        margin-bottom: 1rem;
+      }
+
+      .control-group:last-child {
+        margin-bottom: 0;
+      }
+
+      .control-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: var(--base01);
+        font-weight: bold;
+      }
+
+      .control-group input {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid var(--base2);
+        border-radius: 4px;
+        font-family: "Monoid", monospace;
+        font-size: 1rem;
+        box-sizing: border-box;
+      }
+
+      .control-group small {
+        display: block;
+        margin-top: 0.5rem;
+        color: var(--base1);
+        font-size: 0.85rem;
+      }
+
+      .button-primary {
+        width: 100%;
+        padding: 1rem;
+        background: var(--blue);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-size: 1rem;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+
+      .button-primary:hover:not(:disabled) {
+        background: var(--cyan);
+      }
+
+      .button-primary:disabled {
+        background: var(--base1);
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
+
+      #device-status {
+        margin-top: 1rem;
+        padding: 0.75rem;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        display: none;
+      }
+
+      .file-browser {
+        background: white;
+        border: 1px solid var(--base2);
+        border-radius: 8px;
+        overflow: hidden;
+        display: none;
+      }
+
+      .browser-header {
+        padding: 1rem;
+        background: var(--base2);
+        border-bottom: 2px solid var(--base1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .browser-header h2 {
+        margin: 0;
+        font-size: 1.1rem;
+        color: var(--base01);
+      }
+
+      .close-btn {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: var(--base01);
+        padding: 0;
+        width: 2rem;
+        height: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .close-btn:hover {
+        color: var(--red);
+      }
+
+      .current-path {
+        padding: 0.75rem 1rem;
+        background: var(--base3);
+        border-bottom: 1px solid var(--base2);
+        font-family: "Monoid", monospace;
+        font-size: 0.9rem;
+        color: var(--base01);
+      }
+
+      .folder-list {
+        max-height: 500px;
+        overflow-y: auto;
+      }
+
+      .browser-footer {
+        padding: 1rem;
+        background: var(--base3);
+        border-top: 2px solid var(--base1);
+        display: flex;
+        gap: 0.5rem;
+      }
+
+      .browser-footer button {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: background 0.2s;
+      }
+
+      .btn-new-folder {
+        background: var(--blue);
+        color: white;
+      }
+
+      .btn-new-folder:hover {
+        background: var(--cyan);
+      }
+
+      .btn-upload {
+        flex: 1;
+        background: var(--green);
+        color: white;
+      }
+
+      .btn-upload:hover {
+        background: var(--green);
+        filter: brightness(1.1);
+      }
+
+      .apply-css-btn {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+        color: white;
+        transition: background 0.2s;
+      }
+
+      .convert-btn {
+        padding: 0.75rem 1.5rem;
+        background: var(--green);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: background 0.2s;
+      }
+
+      .convert-btn:hover {
+        filter: brightness(1.1);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="manager-container">
+      <!-- Header -->
+      <div class="header">
+        <h1>Device Manager</h1>
+        <p>Manage files on your X4 e-paper device via WiFi</p>
+      </div>
+
+      <!-- Connection Card -->
+      <div class="connection-card">
+        <h2>Connect to Device</h2>
+
+        <div class="control-group">
+          <label for="device-ip">Device IP Address</label>
+          <input
+            type="text"
+            id="device-ip"
+            value="192.168.3.3"
+            placeholder="192.168.3.3"
+          />
+        </div>
+
+        <button id="connect-btn" class="button-primary">
+          Connect to Device
+        </button>
+
+        <div id="device-status"></div>
+      </div>
+    </div>
+
+    <!-- Device Browser Modal -->
+    <div
+      id="device-browser-modal"
+      style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 10000;
+        padding: 2rem;
+      "
+    >
+      <div
+        style="
+          background: #fdf6e3;
+          max-width: 600px;
+          margin: 0 auto;
+          border-radius: 8px;
+          overflow: hidden;
+          max-height: 90vh;
+          display: flex;
+          flex-direction: column;
+        "
+      >
+        <div
+          style="
+            padding: 1rem;
+            border-bottom: 2px solid #93a1a1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          "
+        >
+          <h2 style="margin: 0; font-size: 1.2rem">Browse Device</h2>
+          <button
+            id="close-browser-btn"
+            style="
+              background: none;
+              border: none;
+              font-size: 1.5rem;
+              cursor: pointer;
+              color: #586e75;
+            "
+          >
+            &times;
+          </button>
+        </div>
+
+        <div style="padding: 1rem; border-bottom: 1px solid #eee8d5">
+          <div
+            style="font-family: monospace; color: #586e75; font-size: 0.9rem"
+          >
+            Current path: <span id="current-path">/</span>
+          </div>
+        </div>
+
+        <div id="folder-list" style="flex: 1; overflow-y: auto; padding: 1rem">
+          <div style="text-align: center; color: #93a1a1; padding: 2rem">
+            Loading...
+          </div>
+        </div>
+
+        <div
+          style="
+            padding: 1rem;
+            border-top: 2px solid #93a1a1;
+            display: flex;
+            gap: 0.5rem;
+          "
+        >
+          <button
+            id="new-folder-btn"
+            class="apply-css-btn"
+            style="background: #268bd2"
+          >
+            New Folder
+          </button>
+          <button id="upload-here-btn" class="convert-btn" style="flex: 1">
+            Upload Here
+          </button>
+          <button
+            id="cancel-browser-btn"
+            class="apply-css-btn"
+            style="background: #93a1a1"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- XTC Preview Modal (same as extension) -->
+    <div
+      id="xtc-preview-modal"
+      style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 10001;
+        padding: 2rem;
+      "
+    >
+      <div
+        style="
+          background: #fdf6e3;
+          max-width: 800px;
+          margin: 0 auto;
+          border-radius: 8px;
+          overflow: hidden;
+          max-height: 90vh;
+          display: flex;
+          flex-direction: column;
+        "
+      >
+        <div
+          style="
+            padding: 1rem;
+            border-bottom: 2px solid #93a1a1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          "
+        >
+          <h2 id="preview-filename" style="margin: 0; font-size: 1.2rem">
+            Preview
+          </h2>
+          <button
+            id="close-preview-btn"
+            style="
+              background: none;
+              border: none;
+              font-size: 1.5rem;
+              cursor: pointer;
+              color: #586e75;
+            "
+          >
+            &times;
+          </button>
+        </div>
+
+        <div
+          id="preview-content"
+          style="
+            flex: 1;
+            overflow-y: auto;
+            padding: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #eee8d5;
+          "
+        >
+          <div style="text-align: center; color: #93a1a1">Loading...</div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="js/device-manager.js"></script>
+  </body>
+</html>

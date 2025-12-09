@@ -219,7 +219,11 @@ class XTCViewer {
    * Navigate to the previous chapter
    */
   prevChapter() {
-    if (!this.parser || !this.parser.chapters || this.parser.chapters.length === 0) {
+    if (
+      !this.parser ||
+      !this.parser.chapters ||
+      this.parser.chapters.length === 0
+    ) {
       return;
     }
 
@@ -240,13 +244,20 @@ class XTCViewer {
    * Navigate to the next chapter
    */
   nextChapter() {
-    if (!this.parser || !this.parser.chapters || this.parser.chapters.length === 0) {
+    if (
+      !this.parser ||
+      !this.parser.chapters ||
+      this.parser.chapters.length === 0
+    ) {
       return;
     }
 
     // Find the current chapter
     const currentChapter = this.findCurrentChapter();
-    if (currentChapter === null || currentChapter >= this.parser.chapters.length - 1) {
+    if (
+      currentChapter === null ||
+      currentChapter >= this.parser.chapters.length - 1
+    ) {
       // Already at last chapter or no chapters, go to last page
       this.goToPage(this.parser.pageIndex.length - 1);
       return;
@@ -262,7 +273,11 @@ class XTCViewer {
    * @returns {number|null} - Chapter index or null if no chapters
    */
   findCurrentChapter() {
-    if (!this.parser || !this.parser.chapters || this.parser.chapters.length === 0) {
+    if (
+      !this.parser ||
+      !this.parser.chapters ||
+      this.parser.chapters.length === 0
+    ) {
       return null;
     }
 
@@ -308,9 +323,11 @@ class XTCViewer {
     const hasChapters = this.parser.chapters && this.parser.chapters.length > 0;
     if (hasChapters) {
       const currentChapter = this.findCurrentChapter();
-      this.elements.prevChapterBtn.disabled = currentChapter === null || currentChapter === 0;
+      this.elements.prevChapterBtn.disabled =
+        currentChapter === null || currentChapter === 0;
       this.elements.nextChapterBtn.disabled =
-        currentChapter === null || currentChapter >= this.parser.chapters.length - 1;
+        currentChapter === null ||
+        currentChapter >= this.parser.chapters.length - 1;
     } else {
       // No chapters - disable chapter navigation
       this.elements.prevChapterBtn.disabled = true;

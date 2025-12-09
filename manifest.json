@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "2X4 Article Extractor",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Extract web articles into a reading queue for offline XTC conversion on Xteink X4 e-readers",
   "permissions": ["activeTab", "storage", "scripting"],
   "host_permissions": ["<all_urls>"],

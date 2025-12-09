@@ -8,7 +8,9 @@ let currentQueue = [];
 const elements = {
   addCurrent: document.getElementById("add-current"),
   openPwa: document.getElementById("open-pwa"),
+  openDeviceManager: document.getElementById("open-device-manager"),
   openViewer: document.getElementById("open-viewer"),
+  openLockscreen: document.getElementById("open-lockscreen"),
   openConverter: document.getElementById("open-converter"),
   clearQueue: document.getElementById("clear-queue"),
   queueList: document.getElementById("queue-list"),
@@ -141,7 +143,9 @@ function createQueueItem(article, index) {
 function setupEventListeners() {
   elements.addCurrent.addEventListener("click", addCurrentPage);
   elements.openPwa.addEventListener("click", openPwa);
+  elements.openDeviceManager.addEventListener("click", openDeviceManager);
   elements.openViewer.addEventListener("click", openViewer);
+  elements.openLockscreen.addEventListener("click", openLockscreen);
   elements.openConverter.addEventListener("click", openConverter);
   elements.clearQueue.addEventListener("click", clearQueue);
 }
@@ -193,6 +197,16 @@ async function openPwa() {
 }
 
 // Open XTC Viewer (viewer.html)
+async function openDeviceManager() {
+  try {
+    const url = chrome.runtime.getURL("device-manager.html");
+    await chrome.tabs.create({ url });
+    window.close();
+  } catch (error) {
+    console.error("Error opening device manager:", error);
+  }
+}
+
 async function openViewer() {
   try {
     const url = chrome.runtime.getURL("viewer.html");
@@ -201,6 +215,19 @@ async function openViewer() {
   } catch (error) {
     console.error("Error opening Viewer:", error);
     alert("Failed to open Viewer: " + error.message);
+  }
+}
+
+// Open Lock Screen Images tool (external URL)
+async function openLockscreen() {
+  try {
+    await chrome.tabs.create({
+      url: "https://mostlymaths.net/misc-pwas/eink-bg/",
+    });
+    window.close();
+  } catch (error) {
+    console.error("Error opening Lock Screen tool:", error);
+    alert("Failed to open Lock Screen tool: " + error.message);
   }
 }
 

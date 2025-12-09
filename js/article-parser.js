@@ -115,17 +115,20 @@ export class ArticleParser {
    * @returns {string} - TOC HTML content
    */
   generateTOC() {
-    const entries = this.articles.map((article, index) => {
-      const title = article.title || `Article ${index + 1}`;
-      const domain = article.siteName || this._extractDomain(article.url) || "Unknown";
+    const entries = this.articles
+      .map((article, index) => {
+        const title = article.title || `Article ${index + 1}`;
+        const domain =
+          article.siteName || this._extractDomain(article.url) || "Unknown";
 
-      return `
+        return `
         <div class="toc-entry">
           <div class="toc-title">${this.escapeHtml(title)}</div>
           <div class="toc-domain">(${this.escapeHtml(domain)})</div>
         </div>
       `;
-    }).join('');
+      })
+      .join("");
 
     return `
       <div class="table-of-contents">
@@ -133,7 +136,7 @@ export class ArticleParser {
           ${entries}
         </div>
         <div class="toc-footer">
-          <p>${this.articles.length} article${this.articles.length !== 1 ? 's' : ''}</p>
+          <p>${this.articles.length} article${this.articles.length !== 1 ? "s" : ""}</p>
         </div>
       </div>
     `;
@@ -145,12 +148,12 @@ export class ArticleParser {
    * @returns {string} - Domain or empty string
    */
   _extractDomain(url) {
-    if (!url) return '';
+    if (!url) return "";
     try {
       const urlObj = new URL(url);
-      return urlObj.hostname.replace(/^www\./, '');
+      return urlObj.hostname.replace(/^www\./, "");
     } catch {
-      return '';
+      return "";
     }
   }
 
@@ -251,9 +254,9 @@ export class ArticleParser {
     if (this.includeTOC) {
       // Add starting TOC
       chapters.push({
-        id: 'toc-start',
-        href: 'toc-start.html',
-        title: 'Table of Contents',
+        id: "toc-start",
+        href: "toc-start.html",
+        title: "Table of Contents",
       });
     }
 
@@ -269,9 +272,9 @@ export class ArticleParser {
     if (this.includeTOC) {
       // Add ending TOC
       chapters.push({
-        id: 'toc-end',
-        href: 'toc-end.html',
-        title: 'Table of Contents',
+        id: "toc-end",
+        href: "toc-end.html",
+        title: "Table of Contents",
       });
     }
 
