@@ -960,8 +960,3 @@ class ExtensionConverter {
 window.addEventListener("DOMContentLoaded", () => {
   window.converter = new ExtensionConverter();
 });
-
-// Initialize converter when page loads
-window.addEventListener("DOMContentLoaded", () => {
-  window.converter = new ExtensionConverter();
-});

@@ -322,7 +322,7 @@ class DeviceManager {
   async createFolder(name) {
     try {
       const folderPath =
-        this.currentPath === "/" ? `/${name}` : `${this.currentPath}/${name}`;
+        this.currentPath === "/" ? `/${name}/` : `${this.currentPath}/${name}/`;
 
       const formData = new FormData();
       formData.append("path", folderPath);
@@ -355,7 +355,7 @@ class DeviceManager {
       const newPath = pathParts.join("/");
 
       const formData = new FormData();
-      formData.append("oldpath", oldPath);
+      formData.append("src", oldPath);
       formData.append("path", newPath);
 
       const response = await fetch(`http://${this.deviceIP}/edit`, {
