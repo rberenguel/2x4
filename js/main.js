@@ -30,6 +30,8 @@ class EPUBConverterApp {
     this.settingsStorage = new SettingsStorage();
     this.htmlExtractor = new HTMLExtractor();
     this.translationManager = new TranslationManager();
+    this.previewRenderCounter = 0; // Track preview render requests to skip outdated ones
+    this.previewCache = new Map(); // Cache rendered preview images by "chapterIndex-pageIndex"
 
     // Create conversion pipeline and controller
     this.conversionPipeline = new ConversionPipeline({
@@ -479,6 +481,9 @@ class EPUBConverterApp {
     try {
       if (index < 0 || index >= this.getTotalChapters()) return;
 
+      // Clear preview cache when loading new chapter
+      this.clearPreviewCache();
+
       // Get chapter content based on mode
       const html =
         this.currentMode === "imported"
@@ -526,9 +531,60 @@ class EPUBConverterApp {
       pageInfo.currentChapter >= this.getTotalChapters();
   }
 
-  async updateImagePreview() {
+  async updateImagePreview(forceRender = false) {
     const scaledPreview = document.querySelector("#preview-viewport");
     const actualSizePreview = document.querySelector("#actual-size-viewport");
+
+    console.log("updateImagePreview - scaledPreview:", !!scaledPreview, "actualSizePreview:", !!actualSizePreview, "forceRender:", forceRender);
+
+    // Generate cache key based on current position and settings
+    const cacheKey = `${this.paginator.currentChapterIndex}-${this.paginator.currentPageIndex}`;
+    console.log("Cache key:", cacheKey, "Cached:", this.previewCache.has(cacheKey));
+
+    // Check cache first (unless force render is requested)
+    if (!forceRender && this.previewCache.has(cacheKey)) {
+      const cachedUrl = this.previewCache.get(cacheKey);
+      scaledPreview.innerHTML = `<img src="${cachedUrl}" style="width: 100%; height: 100%; object-fit: contain;" />`;
+      actualSizePreview.innerHTML = `<img src="${cachedUrl}" />`;
+      return;
+    }
+
+    // Not cached - show placeholder with render button
+    if (!forceRender) {
+      console.log("Setting eye icon placeholders for both previews");
+      scaledPreview.innerHTML = `
+        <div class="preview-placeholder" style="cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+          <p>Click to render preview</p>
+        </div>
+      `;
+      actualSizePreview.innerHTML = `
+        <div class="preview-placeholder" style="cursor: pointer; display: flex; align-items: center; justify-content: center;">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        </div>
+      `;
+      console.log("Eye icon placeholders set. scaledPreview innerHTML length:", scaledPreview.innerHTML.length, "actualSizePreview innerHTML length:", actualSizePreview.innerHTML.length);
+
+      // Add click handlers to trigger render
+      const renderPreview = async () => {
+        scaledPreview.removeEventListener("click", renderPreview);
+        actualSizePreview.removeEventListener("click", renderPreview);
+        await this.updateImagePreview(true);
+      };
+      scaledPreview.addEventListener("click", renderPreview);
+      actualSizePreview.addEventListener("click", renderPreview);
+      return;
+    }
+
+    // Force render requested - show loading state
+    this.previewRenderCounter++;
+    const myRenderID = this.previewRenderCounter;
 
     scaledPreview.innerHTML =
       '<div class="preview-placeholder"><p>Rendering...</p></div>';
@@ -550,34 +606,15 @@ class EPUBConverterApp {
         const currentChapterIndex = this.paginator.currentChapterIndex;
         const currentPageIndex = this.paginator.currentPageIndex;
         const currentPageInfo = this.pageMap[currentChapterIndex];
-        // Progress at START of page (0-indexed), so page 0 = 0%, page 1 = 1/total, etc.
         const chapterProgress = currentPageIndex / currentPageInfo.pageCount;
         const bookProgress =
           (currentPageInfo.startPage - 1 + currentPageIndex) / this.totalPages;
 
-        // Calculate chapter boundary positions
         const chapterMarkers = this.pageMap.map(
           (chapter) => (chapter.startPage - 1) / this.totalPages,
         );
 
         progressInfo = { chapterProgress, bookProgress, chapterMarkers };
-        console.log(
-          "Progress bars enabled - progressInfo:",
-          progressInfo,
-          "chapterIdx:",
-          currentChapterIndex,
-          "pageIdx:",
-          currentPageIndex,
-          "pageMap:",
-          this.pageMap,
-        );
-      } else {
-        console.log(
-          "Progress bars NOT active - checked:",
-          this.elements.enableProgressBars?.checked,
-          "pageMap:",
-          !!this.pageMap,
-        );
       }
 
       const blob = await this.renderer.renderPageToImage(
@@ -586,15 +623,21 @@ class EPUBConverterApp {
         settings,
         progressInfo,
       );
+
+      // Check if this render is still current
+      if (myRenderID !== this.previewRenderCounter) {
+        console.log(`Skipping outdated preview render ${myRenderID} (current: ${this.previewRenderCounter})`);
+        return;
+      }
+
       const imageUrl = URL.createObjectURL(blob);
 
-      // Update scaled preview (fits to viewport)
+      // Cache the result
+      this.previewCache.set(cacheKey, imageUrl);
+
+      // Update previews
       scaledPreview.innerHTML = `<img src="${imageUrl}" style="width: 100%; height: 100%; object-fit: contain;" />`;
-
-      // Update actual-size preview (shows at real 480×800 pixels)
       actualSizePreview.innerHTML = `<img src="${imageUrl}" />`;
-
-      setTimeout(() => URL.revokeObjectURL(imageUrl), 1000);
     } catch (error) {
       console.error("Error updating preview:", error);
       scaledPreview.innerHTML =
@@ -602,6 +645,14 @@ class EPUBConverterApp {
       actualSizePreview.innerHTML =
         '<div class="preview-placeholder"><p>Preview error</p></div>';
     }
+  }
+
+  clearPreviewCache() {
+    // Revoke all cached blob URLs to free memory
+    for (const url of this.previewCache.values()) {
+      URL.revokeObjectURL(url);
+    }
+    this.previewCache.clear();
   }
 
   debouncedUpdatePaginatorSettings() {
@@ -618,6 +669,9 @@ class EPUBConverterApp {
 
   async updatePaginatorSettings() {
     if (!this.epubLoaded) return;
+
+    // Clear preview cache when settings change
+    this.clearPreviewCache();
 
     const settings = {
       fontFamily: this.elements.fontFamily.value,

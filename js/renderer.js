@@ -71,6 +71,12 @@ export class Renderer {
     document.body.appendChild(tempContainer);
     const domTime = performance.now();
 
+    // Expand all <details> elements to show hidden content
+    const detailsElements = tempContainer.querySelectorAll("details");
+    detailsElements.forEach((details) => {
+      details.open = true;
+    });
+
     // Hyphenate
     if (window.Hyphenopoly && window.Hyphenopoly.hyphenators) {
       const paragraphs = tempContainer.querySelectorAll("p");
@@ -256,11 +262,70 @@ export class Renderer {
     ctx.fillStyle = "#073642"; // Solarized base02 (darker)
     ctx.fillRect(0, chapterBarY, canvas.width * chapterProgress, barHeight);
 
+    // Draw progress dots indicator in bottom right corner
+    this.drawProgressDots(canvas, bookProgress);
+
     console.log(
       "Progress bars drawn at top (10px offset) - book bar width:",
       canvas.width * bookProgress,
       "chapter bar width:",
       canvas.width * chapterProgress,
     );
+  }
+
+  /**
+   * Draw a 3x3 pixel progress indicator in the bottom right corner
+   * Shows book progress in 10% steps using a dice-like pattern
+   *
+   * Pattern (0-indexed coordinates):
+   * 0-10%:  Empty
+   * 10-20%: 1 dot - center [1,1]
+   * 20-30%: 2 dots - diagonal [0,0], [2,2]
+   * 30-40%: 3 dots - diagonal + center [0,0], [1,1], [2,2]
+   * 40-50%: 4 dots - corners [0,0], [0,2], [2,0], [2,2]
+   * 50-60%: 5 dots - corners + center [0,0], [0,2], [1,1], [2,0], [2,2]
+   * 60-70%: 6 dots - sides [0,0], [0,2], [1,0], [1,2], [2,0], [2,2]
+   * 70-80%: 7 dots - sides + center [0,0], [0,2], [1,0], [1,1], [1,2], [2,0], [2,2]
+   * 80-90%: 8 dots - all edges [0,0], [0,1], [0,2], [1,0], [1,2], [2,0], [2,1], [2,2]
+   * 90-100%: 9 dots - all filled (all positions)
+   *
+   * @param {HTMLCanvasElement} canvas - The 480×800 canvas to draw on
+   * @param {number} bookProgress - Progress through entire book (0.0 to 1.0)
+   */
+  drawProgressDots(canvas, bookProgress) {
+    const ctx = canvas.getContext("2d");
+
+    // Position in bottom-right corner with padding (accounting for bezel)
+    const rightOffset = 12; // 12px from right edge
+    const bottomOffset = 12; // 12px from bottom edge
+    const gridSize = 3;
+
+    // Calculate starting position (top-left of 3x3 grid)
+    const startX = canvas.width - rightOffset - gridSize;
+    const startY = canvas.height - bottomOffset - gridSize;
+
+    // Calculate progress segment (0-9)
+    const segment = Math.min(9, Math.floor(bookProgress * 10));
+
+    // Define dot patterns for each segment (dice-like)
+    const patterns = [
+      [], // 0-10%: empty
+      [[1, 1]], // 10-20%: center
+      [[0, 0], [2, 2]], // 20-30%: diagonal
+      [[0, 0], [1, 1], [2, 2]], // 30-40%: diagonal + center
+      [[0, 0], [0, 2], [2, 0], [2, 2]], // 40-50%: corners
+      [[0, 0], [0, 2], [1, 1], [2, 0], [2, 2]], // 50-60%: corners + center
+      [[0, 0], [0, 2], [1, 0], [1, 2], [2, 0], [2, 2]], // 60-70%: sides
+      [[0, 0], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 2]], // 70-80%: sides + center
+      [[0, 0], [0, 1], [0, 2], [1, 0], [1, 2], [2, 0], [2, 1], [2, 2]], // 80-90%: edges
+      [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 1], [2, 2]], // 90-100%: all
+    ];
+
+    // Draw the dots
+    ctx.fillStyle = "#000000"; // Pure black
+    const pattern = patterns[segment];
+    for (const [row, col] of pattern) {
+      ctx.fillRect(startX + col, startY + row, 1, 1);
+    }
   }
 }

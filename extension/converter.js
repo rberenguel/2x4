@@ -26,6 +26,8 @@ class ExtensionConverter {
 
     this.isConverting = false;
     this.currentChapterIndex = 0;
+    this.previewRenderCounter = 0; // Track preview render requests to skip outdated ones
+    this.previewCache = new Map(); // Cache rendered preview images by "chapterIndex-pageIndex"
 
     this.initializeUI();
 
@@ -368,6 +370,9 @@ class ExtensionConverter {
   }
 
   updatePaginatorSettings() {
+    // Clear preview cache when settings change
+    this.clearPreviewCache();
+
     const settings = {
       fontFamily: this.elements.fontFamily.value,
       fontSize: parseInt(this.elements.fontSize.value),
@@ -385,6 +390,9 @@ class ExtensionConverter {
 
   async loadChapter(chapterIndex) {
     try {
+      // Clear preview cache when loading new chapter
+      this.clearPreviewCache();
+
       this.currentChapterIndex = chapterIndex;
 
       const html = await this.articleParser.getChapterContent(chapterIndex);
@@ -393,14 +401,62 @@ class ExtensionConverter {
       this.updateChapterInfo();
       this.updateNavigationButtons();
       await this.updateImagePreview();
-      this.updateActualSizePreview();
+      // this.updateActualSizePreview(); // REMOVED - updateImagePreview now handles both previews
     } catch (error) {
       console.error("Error loading chapter:", error);
     }
   }
 
-  async updateImagePreview() {
+  async updateImagePreview(forceRender = false) {
+    // Generate cache key based on current position
+    const cacheKey = `${this.currentChapterIndex}-${this.paginator.currentPageIndex}`;
+
+    // Check cache first (unless force render is requested)
+    if (!forceRender && this.previewCache.has(cacheKey)) {
+      const cachedUrl = this.previewCache.get(cacheKey);
+      this.elements.previewViewport.innerHTML = `<img src="${cachedUrl}" style="width: 100%; height: 100%; object-fit: contain;" />`;
+      this.elements.actualSizeViewport.innerHTML = `<img src="${cachedUrl}" />`;
+      return;
+    }
+
+    // Not cached - show placeholder with render button
+    if (!forceRender) {
+      this.elements.previewViewport.innerHTML = `
+        <div class="preview-placeholder" style="cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+          <p>Click to render preview</p>
+        </div>
+      `;
+      this.elements.actualSizeViewport.innerHTML = `
+        <div class="preview-placeholder" style="cursor: pointer; display: flex; align-items: center; justify-content: center;">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        </div>
+      `;
+
+      // Add click handlers to trigger render
+      const renderPreview = async () => {
+        this.elements.previewViewport.removeEventListener("click", renderPreview);
+        this.elements.actualSizeViewport.removeEventListener("click", renderPreview);
+        await this.updateImagePreview(true);
+      };
+      this.elements.previewViewport.addEventListener("click", renderPreview);
+      this.elements.actualSizeViewport.addEventListener("click", renderPreview);
+      return;
+    }
+
+    // Force render requested - show loading state
+    this.previewRenderCounter++;
+    const myRenderID = this.previewRenderCounter;
+
     this.elements.previewViewport.innerHTML =
+      '<div class="preview-placeholder"><p>Rendering...</p></div>';
+    this.elements.actualSizeViewport.innerHTML =
       '<div class="preview-placeholder"><p>Rendering...</p></div>';
 
     try {
@@ -422,12 +478,10 @@ class ExtensionConverter {
       if (this.elements.enableProgressBars.checked && this.pageMap) {
         const currentPageIndex = this.paginator.currentPageIndex;
         const currentPageInfo = this.pageMap[this.currentChapterIndex];
-        // Progress at START of page (0-indexed), so page 0 = 0%, page 1 = 1/total, etc.
         const chapterProgress = currentPageIndex / currentPageInfo.pageCount;
         const bookProgress =
           (currentPageInfo.startPage - 1 + currentPageIndex) / this.totalPages;
 
-        // Calculate chapter boundary positions
         const chapterMarkers = this.pageMap.map(
           (chapter) => (chapter.startPage - 1) / this.totalPages,
         );
@@ -441,13 +495,33 @@ class ExtensionConverter {
         settings,
         progressInfo,
       );
+
+      // Check if this render is still current
+      if (myRenderID !== this.previewRenderCounter) {
+        console.log(`Skipping outdated preview render ${myRenderID} (current: ${this.previewRenderCounter})`);
+        return;
+      }
+
       const url = URL.createObjectURL(blob);
 
+      // Cache the result
+      this.previewCache.set(cacheKey, url);
+
       this.elements.previewViewport.innerHTML = `<img src="${url}" style="width: 100%; height: 100%; object-fit: contain;" />`;
+      this.elements.actualSizeViewport.innerHTML = `<img src="${url}" />`;
     } catch (error) {
       console.error("Error updating image preview:", error);
       this.elements.previewViewport.innerHTML = `<div class="preview-placeholder"><p>Error: ${error.message}</p></div>`;
+      this.elements.actualSizeViewport.innerHTML = `<div class="preview-placeholder"><p>Error: ${error.message}</p></div>`;
     }
+  }
+
+  clearPreviewCache() {
+    // Revoke all cached blob URLs to free memory
+    for (const url of this.previewCache.values()) {
+      URL.revokeObjectURL(url);
+    }
+    this.previewCache.clear();
   }
 
   updateActualSizePreview() {
@@ -510,7 +584,7 @@ class ExtensionConverter {
       this.updateChapterInfo();
       this.updateNavigationButtons();
       await this.updateImagePreview();
-      this.updateActualSizePreview();
+      // this.updateActualSizePreview(); // REMOVED - updateImagePreview now handles both previews
     }
   }
 
@@ -519,7 +593,7 @@ class ExtensionConverter {
       this.updateChapterInfo();
       this.updateNavigationButtons();
       await this.updateImagePreview();
-      this.updateActualSizePreview();
+      // this.updateActualSizePreview(); // REMOVED - updateImagePreview now handles both previews
     }
   }
 
@@ -560,7 +634,7 @@ class ExtensionConverter {
       this.paginator.goToPage(savedPageIndex);
       this.updateNavigationButtons();
       await this.updateImagePreview();
-      this.updateActualSizePreview();
+      // this.updateActualSizePreview(); // REMOVED - updateImagePreview now handles both previews
     } else {
       this.pageMap = null;
       this.totalPages = 0;

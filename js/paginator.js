@@ -301,6 +301,12 @@ export class Paginator {
     // STEP 3: Clone with proper column layout
     const clone = this.container.cloneNode(true);
 
+    // Expand all <details> elements to show hidden content
+    const detailsElements = clone.querySelectorAll("details");
+    detailsElements.forEach((details) => {
+      details.open = true;
+    });
+
     // Get the full width of all columns before moving back
     const fullWidth = this.container.scrollWidth;
 
