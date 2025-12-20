@@ -25,6 +25,10 @@ class DeviceManager {
       closePreviewBtn: document.getElementById("close-preview-btn"),
       previewFilename: document.getElementById("preview-filename"),
       previewContent: document.getElementById("preview-content"),
+      uploadProgressContainer: document.getElementById("upload-progress-container"),
+      uploadProgressBar: document.getElementById("upload-progress-bar"),
+      uploadStatusText: document.getElementById("upload-status-text"),
+      uploadPercentage: document.getElementById("upload-percentage"),
     };
 
     this.loadDeviceIP();
@@ -259,18 +263,47 @@ class DeviceManager {
       const files = Array.from(e.target.files);
       if (files.length === 0) return;
 
-      for (const file of files) {
+      this.elements.uploadProgressContainer.style.display = "block";
+      this.elements.uploadHereBtn.disabled = true;
+
+      let successCount = 0;
+      let failCount = 0;
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const progressPrefix = `Uploading ${i + 1}/${files.length}: ${file.name}`;
+        
         try {
           const targetPath =
             this.currentPath === "/"
               ? `/${file.name}`
               : `${this.currentPath}/${file.name}`;
 
-          await this.uploadFile(file, targetPath);
+          await this.uploadFile(file, targetPath, (percent) => {
+            this.elements.uploadStatusText.textContent = progressPrefix;
+            this.elements.uploadPercentage.textContent = `${percent}%`;
+            this.elements.uploadProgressBar.style.width = `${percent}%`;
+          });
+          successCount++;
         } catch (error) {
           console.error(`Upload failed for ${file.name}:`, error);
+          failCount++;
         }
       }
+
+      // Hide progress after short delay
+      this.elements.uploadStatusText.textContent = "Upload complete!";
+      this.elements.uploadPercentage.textContent = "100%";
+      this.elements.uploadProgressBar.style.width = "100%";
+      
+      setTimeout(() => {
+        this.elements.uploadProgressContainer.style.display = "none";
+        this.elements.uploadHereBtn.disabled = false;
+        this.elements.uploadProgressBar.style.width = "0%";
+      }, 1500);
+
+      const resultMsg = `Uploaded ${successCount} files.${failCount > 0 ? ` Failed: ${failCount}` : ""}`;
+      this.showStatus(resultMsg, failCount > 0 ? "error" : "success");
 
       // Refresh folder
       await this.loadFolder(this.currentPath);
@@ -279,16 +312,38 @@ class DeviceManager {
     fileInput.click();
   }
 
-  async uploadFile(file, targetPath) {
-    const formData = new FormData();
-    formData.append("data", file, targetPath);
+  uploadFile(file, targetPath, onProgress) {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      const formData = new FormData();
+      formData.append("data", file, targetPath);
 
-    const response = await fetch(`http://${this.deviceIP}/edit`, {
-      method: "POST",
-      body: formData,
+      xhr.upload.addEventListener("progress", (event) => {
+        if (event.lengthComputable) {
+          const percentComplete = Math.round((event.loaded / event.total) * 100);
+          if (onProgress) onProgress(percentComplete);
+        }
+      });
+
+      xhr.addEventListener("load", () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve();
+        } else {
+          reject(new Error(`HTTP ${xhr.status}`));
+        }
+      });
+
+      xhr.addEventListener("error", () => {
+        reject(new Error("Network error during upload"));
+      });
+      
+      xhr.addEventListener("abort", () => {
+          reject(new Error("Upload aborted"));
+      });
+
+      xhr.open("POST", `http://${this.deviceIP}/edit`);
+      xhr.send(formData);
     });
-
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
   }
 
   async confirmDelete(path, name) {
