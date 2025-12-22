@@ -274,10 +274,11 @@ export class Renderer {
   }
 
   /**
-   * Draw a 3x3 pixel progress indicator in the bottom right corner
+   * Draw a 6x6 pixel progress indicator in the bottom right corner
    * Shows book progress in 10% steps using a dice-like pattern
+   * Each dot is 2x2 pixels for better visibility
    *
-   * Pattern (0-indexed coordinates):
+   * Pattern (0-indexed 3x3 logical grid, scaled to 2x2 pixels each):
    * 0-10%:  Empty
    * 10-20%: 1 dot - center [1,1]
    * 20-30%: 2 dots - diagonal [0,0], [2,2]
@@ -298,16 +299,17 @@ export class Renderer {
     // Position in bottom-right corner with padding (accounting for bezel)
     const rightOffset = 12; // 12px from right edge
     const bottomOffset = 12; // 12px from bottom edge
-    const gridSize = 3;
+    const gridSize = 6; // 6x6 pixel grid (3x3 logical dots, 2x2 pixels each)
+    const dotSize = 2; // Each dot is 2x2 pixels
 
-    // Calculate starting position (top-left of 3x3 grid)
+    // Calculate starting position (top-left of 6x6 grid)
     const startX = canvas.width - rightOffset - gridSize;
     const startY = canvas.height - bottomOffset - gridSize;
 
     // Calculate progress segment (0-9)
     const segment = Math.min(9, Math.floor(bookProgress * 10));
 
-    // Define dot patterns for each segment (dice-like)
+    // Define dot patterns for each segment (3x3 logical grid, dice-like)
     const patterns = [
       [], // 0-10%: empty
       [[1, 1]], // 10-20%: center
@@ -321,11 +323,15 @@ export class Renderer {
       [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 1], [2, 2]], // 90-100%: all
     ];
 
-    // Draw the dots
+    // Draw the dots (each logical dot becomes a 2x2 pixel block)
     ctx.fillStyle = "#000000"; // Pure black
     const pattern = patterns[segment];
     for (const [row, col] of pattern) {
-      ctx.fillRect(startX + col, startY + row, 1, 1);
+      // Scale logical position to pixel position (multiply by 2)
+      const pixelX = startX + (col * dotSize);
+      const pixelY = startY + (row * dotSize);
+      // Draw 2x2 pixel block
+      ctx.fillRect(pixelX, pixelY, dotSize, dotSize);
     }
   }
 }
