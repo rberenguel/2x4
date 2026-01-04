@@ -13,6 +13,7 @@ Currently, the extension renders each page individually during export:
 ```
 
 For a 300-page article, this means:
+
 - **300 html2canvas calls** (the slowest operation)
 - **30-150 seconds** of rendering time
 - Browser becomes unresponsive during conversion
@@ -43,7 +44,7 @@ Render entire chapter content to **one large canvas**, then slice into pages:
 Different browsers have different canvas size limits:
 
 | Browser | Max Dimension | Max Total Pixels | Pages @ 480×800 |
-|---------|---------------|------------------|-----------------|
+| ------- | ------------- | ---------------- | --------------- |
 | Chrome  | 16,384px      | ~268M pixels     | ~200 pages      |
 | Firefox | 11,180px      | ~124M pixels     | ~140 pages      |
 | Safari  | 4,096px       | ~16M pixels      | ~5 pages        |
@@ -73,7 +74,7 @@ async function renderChapterBatched(chapterContent, pageCount) {
       startPage,
       endPage,
       PAGE_WIDTH,
-      batchHeight
+      batchHeight,
     );
 
     // Slice into individual pages
@@ -83,7 +84,7 @@ async function renderChapterBatched(chapterContent, pageCount) {
         0,
         i * PAGE_HEIGHT,
         PAGE_WIDTH,
-        PAGE_HEIGHT
+        PAGE_HEIGHT,
       );
       allPages.push(pageCanvas);
     }
@@ -101,11 +102,11 @@ async function renderChapterBatched(chapterContent, pageCount) {
 
 ```javascript
 function sliceCanvas(sourceCanvas, x, y, width, height) {
-  const targetCanvas = document.createElement('canvas');
+  const targetCanvas = document.createElement("canvas");
   targetCanvas.width = width;
   targetCanvas.height = height;
 
-  const ctx = targetCanvas.getContext('2d', {
+  const ctx = targetCanvas.getContext("2d", {
     alpha: false,
     desynchronized: true,
   });
@@ -113,8 +114,14 @@ function sliceCanvas(sourceCanvas, x, y, width, height) {
   // Copy region from source canvas
   ctx.drawImage(
     sourceCanvas,
-    x, y, width, height,  // Source region
-    0, 0, width, height   // Target region
+    x,
+    y,
+    width,
+    height, // Source region
+    0,
+    0,
+    width,
+    height, // Target region
   );
 
   return targetCanvas;
@@ -124,13 +131,19 @@ function sliceCanvas(sourceCanvas, x, y, width, height) {
 ### 4. Multi-Column Container Rendering
 
 ```javascript
-async function renderBatchToCanvas(chapterContent, startPage, endPage, width, height) {
+async function renderBatchToCanvas(
+  chapterContent,
+  startPage,
+  endPage,
+  width,
+  height,
+) {
   // Create container with full multi-column content
-  const container = document.createElement('div');
+  const container = document.createElement("div");
   container.style.width = `${width}px`;
   container.style.height = `${height}px`;
   container.style.columnWidth = `${width}px`;
-  container.style.columnGap = '0px';
+  container.style.columnGap = "0px";
   container.innerHTML = chapterContent;
 
   // Position to show correct page range
@@ -139,8 +152,8 @@ async function renderBatchToCanvas(chapterContent, startPage, endPage, width, he
   container.style.transform = `translateX(${offset}px)`;
 
   // Append off-screen
-  container.style.position = 'absolute';
-  container.style.left = '-9999px';
+  container.style.position = "absolute";
+  container.style.left = "-9999px";
   document.body.appendChild(container);
 
   try {
@@ -149,7 +162,7 @@ async function renderBatchToCanvas(chapterContent, startPage, endPage, width, he
       scale: 3,
       width: width,
       height: height,
-      backgroundColor: '#ffffff',
+      backgroundColor: "#ffffff",
       logging: false,
     });
 
@@ -163,12 +176,14 @@ async function renderBatchToCanvas(chapterContent, startPage, endPage, width, he
 ## Tradeoffs
 
 ### Advantages ✅
+
 - **12-20× faster** for typical articles (300 pages)
 - **Fewer browser reflows/repaints** (1 vs N)
 - **Better user experience** (faster conversions)
 - **Lower CPU usage** (less overhead from repeated setup)
 
 ### Disadvantages ⚠️
+
 - **Higher peak memory usage** (~100 pages × 480×800×4 bytes = ~150MB per batch)
 - **More complex code** (batching logic, canvas slicing)
 - **Need to handle batch boundaries** carefully
@@ -179,6 +194,7 @@ async function renderBatchToCanvas(chapterContent, startPage, endPage, width, he
 **Best for: Extension only**
 
 Rationale:
+
 - Extension handles web articles (often 100+ pages)
 - Users expect fast conversion for reading queues
 - Extension already loads everything in memory (not streaming)
@@ -189,11 +205,13 @@ Rationale:
 ### Files to Modify
 
 1. **`extension/converter.js`**
+
    - Add `renderChapterBatched()` method
    - Add `sliceCanvas()` helper
    - Replace per-page rendering in conversion pipeline
 
 2. **`js/conversion-pipeline.js`** (extension-specific path)
+
    - Add flag: `useBatchRendering: true` for extension
    - Keep existing per-page rendering as fallback
 

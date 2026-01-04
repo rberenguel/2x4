@@ -535,11 +535,23 @@ class EPUBConverterApp {
     const scaledPreview = document.querySelector("#preview-viewport");
     const actualSizePreview = document.querySelector("#actual-size-viewport");
 
-    console.log("updateImagePreview - scaledPreview:", !!scaledPreview, "actualSizePreview:", !!actualSizePreview, "forceRender:", forceRender);
+    console.log(
+      "updateImagePreview - scaledPreview:",
+      !!scaledPreview,
+      "actualSizePreview:",
+      !!actualSizePreview,
+      "forceRender:",
+      forceRender,
+    );
 
     // Generate cache key based on current position and settings
     const cacheKey = `${this.paginator.currentChapterIndex}-${this.paginator.currentPageIndex}`;
-    console.log("Cache key:", cacheKey, "Cached:", this.previewCache.has(cacheKey));
+    console.log(
+      "Cache key:",
+      cacheKey,
+      "Cached:",
+      this.previewCache.has(cacheKey),
+    );
 
     // Check cache first (unless force render is requested)
     if (!forceRender && this.previewCache.has(cacheKey)) {
@@ -569,7 +581,12 @@ class EPUBConverterApp {
           </svg>
         </div>
       `;
-      console.log("Eye icon placeholders set. scaledPreview innerHTML length:", scaledPreview.innerHTML.length, "actualSizePreview innerHTML length:", actualSizePreview.innerHTML.length);
+      console.log(
+        "Eye icon placeholders set. scaledPreview innerHTML length:",
+        scaledPreview.innerHTML.length,
+        "actualSizePreview innerHTML length:",
+        actualSizePreview.innerHTML.length,
+      );
 
       // Add click handlers to trigger render
       const renderPreview = async () => {
@@ -626,7 +643,9 @@ class EPUBConverterApp {
 
       // Check if this render is still current
       if (myRenderID !== this.previewRenderCounter) {
-        console.log(`Skipping outdated preview render ${myRenderID} (current: ${this.previewRenderCounter})`);
+        console.log(
+          `Skipping outdated preview render ${myRenderID} (current: ${this.previewRenderCounter})`,
+        );
         return;
       }
 

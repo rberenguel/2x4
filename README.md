@@ -11,6 +11,7 @@ A browser-based PWA and Chrome extension that converts EPUB files, ArXiv papers,
 - **Browser-based:** No server or build tools required
 - **Multiple input formats:**
   - **EPUB files:** Full EPUB 2/3 support with proper pagination
+  - **Comics (CBZ/CBR):** Smart conversion with auto-split and dithering (still in progress, manual split only)
   - **ArXiv papers:** Direct from ArXiv HTML URLs or pasted HTML source
   - **Web articles:** Extract any article with the Chrome extension
 - **Multiple output formats:**
@@ -59,6 +60,18 @@ A browser-based PWA and Chrome extension that converts EPUB files, ArXiv papers,
 - **Chapter jumping:** Click chapters in metadata panel to jump to specific sections
 - **Actual size preview:** Adjustable scale preview (10-140%) to match real device size
 - **Keyboard shortcut:** Press `v` to open viewer in new tab (works in both PWA and extension)
+
+### Comic Converter (Alpha)
+
+- **Formats:** Supports `.cbz` (ZIP) and `.cbr` (RAR) files
+- **Smart Processing:**
+  - **Auto-split:** Automatically detects panel gaps to split double-page spreads
+  - **Manual Trim:** Crop margins per page or globally
+  - **Batch Actions:** "Apply to Remaining" for Rotation, Splits, Brightness, Contrast, and B&W Mode
+- **Display Modes:**
+  - **Actual Size:** Calibrated 1:1 preview for X4 screen size
+  - **Dithered:** Preview the exact 1-bit or 2-bit output
+- **Optimized:** High-quality dithering algorithms (Atkinson, Floyd-Steinberg, etc.)
 
 > **NOTE:**
 > Conversion is slow for "reasons" (html2canvas overhead). Multiple tabs converting in parallel works fine.
@@ -132,6 +145,17 @@ A browser-based PWA and Chrome extension that converts EPUB files, ArXiv papers,
    - OR paste full HTML source from browser (View Source)
    - Click "Load from URL" or "Load from HTML"
    - Adjust settings and convert
+
+4. **Convert a Comic (CBZ/CBR):**
+
+   - Open the extension popup and click "Comic Converter (alpha)"
+   - Or navigate to `cbz.html`
+   - Upload a `.cbz` or `.cbr` file
+   - **Calibrate:** Use the ruler to match the physical screen size
+   - **Edit:** Rotate, crop, or split pages as needed
+   - **Batch:** Use "Apply to Remaining" to propagate settings
+   - **Dither:** Choose a dithering algorithm (Atkinson recommended)
+   - Click "Convert" to download the XTC file
 
 ### 3. View XTC Files
 
@@ -318,6 +342,7 @@ Extension requires Chrome/Chromium for `chrome.storage` and Manifest V3 support.
 - [Mozilla Readability](https://github.com/mozilla/readability) for article extraction
 - [JSZip](https://stuk.github.io/jszip/) for EPUB parsing
 - [html2canvas](https://github.com/niklasvh/html2canvas) for rendering
+- [bitjs](https://github.com/google/bitjs) for RAR/CBR support
 - [Hyphenopoly](https://github.com/mnater/Hyphenopoly) for text hyphenation
 - [idb-keyval](https://github.com/jakearchibald/idb-keyval) by Jake Archibald
 - Claude & Gemini for development assistance

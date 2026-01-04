@@ -11,6 +11,7 @@ const elements = {
   openDeviceManager: document.getElementById("open-device-manager"),
   openViewer: document.getElementById("open-viewer"),
   openLockscreen: document.getElementById("open-lockscreen"),
+  openComicConverter: document.getElementById("open-comic-converter"),
   openConverter: document.getElementById("open-converter"),
   clearQueue: document.getElementById("clear-queue"),
   queueList: document.getElementById("queue-list"),
@@ -146,6 +147,7 @@ function setupEventListeners() {
   elements.openDeviceManager.addEventListener("click", openDeviceManager);
   elements.openViewer.addEventListener("click", openViewer);
   elements.openLockscreen.addEventListener("click", openLockscreen);
+  elements.openComicConverter.addEventListener("click", openComicConverter);
   elements.openConverter.addEventListener("click", openConverter);
   elements.clearQueue.addEventListener("click", clearQueue);
 }
@@ -253,6 +255,28 @@ async function openConverter() {
     alert("Failed to open Converter: " + error.message);
     elements.openConverter.innerHTML = "<span>🚀</span>Open Converter";
     elements.openConverter.disabled = false;
+  }
+}
+
+// Open Comic Converter (cbz.html)
+async function openComicConverter() {
+  try {
+    elements.openComicConverter.disabled = true;
+    elements.openComicConverter.innerHTML = "<span>🗯️</span>Opening...";
+
+    const url = chrome.runtime.getURL("cbz.html");
+    await chrome.tabs.create({ url });
+
+    elements.openComicConverter.innerHTML = "<span>✓</span>Opened!";
+    setTimeout(() => {
+      window.close();
+    }, 500);
+  } catch (error) {
+    console.error("Error opening Comic Converter:", error);
+    alert("Failed to open Comic Converter: " + error.message);
+    elements.openComicConverter.innerHTML =
+      "<span>🗯️</span>Comic Converter (alpha)";
+    elements.openComicConverter.disabled = false;
   }
 }
 

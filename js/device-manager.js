@@ -25,7 +25,9 @@ class DeviceManager {
       closePreviewBtn: document.getElementById("close-preview-btn"),
       previewFilename: document.getElementById("preview-filename"),
       previewContent: document.getElementById("preview-content"),
-      uploadProgressContainer: document.getElementById("upload-progress-container"),
+      uploadProgressContainer: document.getElementById(
+        "upload-progress-container",
+      ),
       uploadProgressBar: document.getElementById("upload-progress-bar"),
       uploadStatusText: document.getElementById("upload-status-text"),
       uploadPercentage: document.getElementById("upload-percentage"),
@@ -272,7 +274,7 @@ class DeviceManager {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const progressPrefix = `Uploading ${i + 1}/${files.length}: ${file.name}`;
-        
+
         try {
           const targetPath =
             this.currentPath === "/"
@@ -295,7 +297,7 @@ class DeviceManager {
       this.elements.uploadStatusText.textContent = "Upload complete!";
       this.elements.uploadPercentage.textContent = "100%";
       this.elements.uploadProgressBar.style.width = "100%";
-      
+
       setTimeout(() => {
         this.elements.uploadProgressContainer.style.display = "none";
         this.elements.uploadHereBtn.disabled = false;
@@ -320,7 +322,9 @@ class DeviceManager {
 
       xhr.upload.addEventListener("progress", (event) => {
         if (event.lengthComputable) {
-          const percentComplete = Math.round((event.loaded / event.total) * 100);
+          const percentComplete = Math.round(
+            (event.loaded / event.total) * 100,
+          );
           if (onProgress) onProgress(percentComplete);
         }
       });
@@ -336,9 +340,9 @@ class DeviceManager {
       xhr.addEventListener("error", () => {
         reject(new Error("Network error during upload"));
       });
-      
+
       xhr.addEventListener("abort", () => {
-          reject(new Error("Upload aborted"));
+        reject(new Error("Upload aborted"));
       });
 
       xhr.open("POST", `http://${this.deviceIP}/edit`);

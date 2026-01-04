@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>2X4 - CBZ Converter</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <link rel="stylesheet" href="fonts/inter.css" />
+    <link rel="stylesheet" href="fonts/monoid.css" />
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/cbz.css" />
+  </head>
+  <body>
+    <div class="container">
+      <!-- Left Panel: Controls -->
+      <aside class="settings-panel">
+        <header>
+          <h1>
+            CBZ Converter
+            <span style="color: #dc322f; font-size: 0.6em; font-weight: normal"
+              >(ALPHA)</span
+            >
+          </h1>
+          <p class="subtitle">Manual CBZ to XTC/XTH</p>
+        </header>
+
+        <div class="settings-section">
+          <label for="cbz-upload" class="file-upload-label">
+            <span class="upload-icon">📚</span>
+            <span class="upload-text">Load File</span>
+            <input type="file" id="cbz-upload" accept=".cbz,.zip,.cbr" />
+          </label>
+          <div id="file-info" class="file-info hidden"></div>
+          <small
+            style="
+              display: block;
+              margin-top: 0.5rem;
+              color: #888;
+              font-size: 0.75rem;
+            "
+          >
+            Supports .cbz, .zip, and .cbr
+          </small>
+        </div>
+
+        <!-- Transforms -->
+        <div class="settings-section controls-disabled" id="transform-controls">
+          <h2 class="collapsible">
+            Transforms <span class="collapse-icon">▼</span>
+          </h2>
+          <div class="section-content">
+            <div class="control-group">
+              <button id="rotate-btn" class="apply-css-btn">Rotate 90°</button>
+              <button
+                id="apply-rotation-remaining-btn"
+                class="apply-css-btn"
+                style="
+                  background-color: var(--base1);
+                  margin-top: 0.25rem;
+                  font-size: 0.75rem;
+                "
+              >
+                Apply Rotation ➜
+              </button>
+            </div>
+
+            <!-- Manual Trim (Percentage Sliders) -->
+            <div
+              style="
+                border-top: 1px dashed var(--base1);
+                margin: 0.5rem 0;
+                padding-top: 0.5rem;
+              "
+            >
+              <label style="margin-bottom: 0.5rem; display: block"
+                >Manual Trim (%)</label
+              >
+
+              <div class="control-group">
+                <label
+                  style="
+                    font-size: 0.75rem;
+                    display: flex;
+                    justify-content: space-between;
+                  "
+                >
+                  Top <span id="trim-top-val">0%</span>
+                </label>
+                <input
+                  type="range"
+                  id="trim-top"
+                  min="0"
+                  max="50"
+                  value="0"
+                  step="0.5"
+                />
+              </div>
+              <div class="control-group">
+                <label
+                  style="
+                    font-size: 0.75rem;
+                    display: flex;
+                    justify-content: space-between;
+                  "
+                >
+                  Bottom <span id="trim-bottom-val">0%</span>
+                </label>
+                <input
+                  type="range"
+                  id="trim-bottom"
+                  min="0"
+                  max="50"
+                  value="0"
+                  step="0.5"
+                />
+              </div>
+              <div class="control-group">
+                <label
+                  style="
+                    font-size: 0.75rem;
+                    display: flex;
+                    justify-content: space-between;
+                  "
+                >
+                  Left <span id="trim-left-val">0%</span>
+                </label>
+                <input
+                  type="range"
+                  id="trim-left"
+                  min="0"
+                  max="50"
+                  value="0"
+                  step="0.5"
+                />
+              </div>
+              <div class="control-group">
+                <label
+                  style="
+                    font-size: 0.75rem;
+                    display: flex;
+                    justify-content: space-between;
+                  "
+                >
+                  Right <span id="trim-right-val">0%</span>
+                </label>
+                <input
+                  type="range"
+                  id="trim-right"
+                  min="0"
+                  max="50"
+                  value="0"
+                  step="0.5"
+                />
+              </div>
+
+              <button
+                id="apply-trim-all"
+                class="apply-css-btn"
+                style="background-color: var(--blue)"
+              >
+                Apply Trim to All Pages
+              </button>
+            </div>
+
+            <div class="control-group">
+              <label style="display: flex; justify-content: space-between">
+                Brightness <span id="brightness-val">100</span>
+              </label>
+              <input
+                type="range"
+                id="brightness"
+                min="0"
+                max="200"
+                value="100"
+              />
+            </div>
+            <div class="control-group">
+              <label style="display: flex; justify-content: space-between">
+                Contrast <span id="contrast-val">100</span>
+              </label>
+              <input type="range" id="contrast" min="0" max="200" value="100" />
+              <button
+                id="apply-adjustments-remaining-btn"
+                class="apply-css-btn"
+                style="
+                  background-color: var(--base1);
+                  margin-top: 0.25rem;
+                  font-size: 0.75rem;
+                "
+              >
+                Apply Adjustments ➜
+              </button>
+            </div>
+
+            <!-- B&W Threshold -->
+            <div
+              class="control-group"
+              style="
+                margin-top: 0.5rem;
+                border-top: 1px dashed var(--base1);
+                padding-top: 0.5rem;
+              "
+            >
+              <label
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: 0.5rem;
+                  font-weight: bold;
+                "
+              >
+                <input type="checkbox" id="bw-mode" /> Pure B&W Mode
+              </label>
+              <div id="bw-controls" class="hidden" style="margin-top: 0.5rem">
+                <label
+                  style="
+                    font-size: 0.75rem;
+                    display: flex;
+                    justify-content: space-between;
+                  "
+                >
+                  Threshold <span id="bw-threshold-val">128</span>
+                </label>
+                <input
+                  type="range"
+                  id="bw-threshold"
+                  min="0"
+                  max="255"
+                  value="128"
+                />
+                <button
+                  id="apply-bw-remaining-btn"
+                  class="apply-css-btn"
+                  style="
+                    background-color: var(--base1);
+                    margin-top: 0.25rem;
+                    font-size: 0.75rem;
+                  "
+                >
+                  Apply B&W ➜
+                </button>
+              </div>
+            </div>
+
+            <button
+              id="reset-transforms-btn"
+              class="apply-css-btn"
+              style="background-color: var(--orange); margin-top: 0.5rem"
+            >
+              Reset Page
+            </button>
+          </div>
+        </div>
+
+        <!-- Splits -->
+        <div class="settings-section controls-disabled" id="split-controls">
+          <h2>Splits</h2>
+          <div class="control-group">
+            <label>Vertical Splits (Long edge)</label>
+            <div class="toggle-group" id="v-split-group">
+              <button data-val="0" class="toggle-btn active">0</button>
+              <button data-val="1" class="toggle-btn">1</button>
+              <button data-val="2" class="toggle-btn">2</button>
+            </div>
+          </div>
+          <div class="control-group">
+            <label>Horizontal Splits (Short edge)</label>
+            <div class="toggle-group" id="h-split-group">
+              <button data-val="0" class="toggle-btn active">0</button>
+              <button data-val="1" class="toggle-btn">1</button>
+            </div>
+          </div>
+          <button id="auto-split-btn" class="apply-css-btn">
+            Auto-Detect Splits
+          </button>
+          <button
+            id="apply-splits-remaining-btn"
+            class="apply-css-btn"
+            style="
+              background-color: var(--base1);
+              margin-top: 0.25rem;
+              font-size: 0.75rem;
+            "
+          >
+            Apply Splits ➜
+          </button>
+          <button
+            id="clear-splits-btn"
+            class="apply-css-btn"
+            style="background-color: var(--orange); margin-top: 0.5rem"
+          >
+            Clear Splits
+          </button>
+        </div>
+
+        <!-- Dithering -->
+        <div
+          class="settings-section collapsed controls-disabled"
+          id="dither-controls"
+        >
+          <h2 class="collapsible">
+            Dithering <span class="collapse-icon">▼</span>
+          </h2>
+          <div class="section-content">
+            <div class="control-group">
+              <label>Algorithm</label>
+              <select id="dither-algo">
+                <option value="floyd">Floyd-Steinberg</option>
+                <option value="atkinson">Atkinson</option>
+                <option value="bayer">Bayer 4x4</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Output -->
+        <div class="settings-section controls-disabled" id="output-controls">
+          <h2>Output</h2>
+          <div class="control-group">
+            <label>Format</label>
+            <select id="output-format">
+              <option value="xtc">XTC (Book)</option>
+              <option value="zip">ZIP (Images)</option>
+            </select>
+          </div>
+          <button id="convert-btn" class="convert-btn">Convert & Export</button>
+
+          <div id="progress-container" class="progress-container hidden">
+            <div class="progress-bar">
+              <div id="progress-fill" class="progress-fill"></div>
+            </div>
+            <p id="progress-text" class="progress-text"></p>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Right Panel: Preview -->
+      <main class="preview-panel">
+        <div class="preview-header">
+          <div class="chapter-info">
+            <!-- Filename and Page Info -->
+            <h2 id="preview-filename">No file loaded</h2>
+            <div class="pagination-controls">
+              <button id="prev-btn" class="nav-btn small" disabled>←</button>
+              <span id="page-indicator">0/0</span>
+              <button id="next-btn" class="nav-btn small" disabled>→</button>
+            </div>
+          </div>
+          <div class="preview-tabs">
+            <button class="preview-tab active" data-preview="actual-size">
+              Actual Size
+            </button>
+            <button class="preview-tab" data-preview="dithered">
+              Dithered
+            </button>
+            <button class="preview-tab" data-preview="original">
+              Original
+            </button>
+          </div>
+        </div>
+
+        <div class="preview-container">
+          <!-- Column 1: Actual Size (Device Preview) -->
+          <div class="preview-column active" data-preview="actual-size">
+            <h3 class="preview-title">Actual Screen Size (5.5cm × 9cm)</h3>
+            <div class="calibration-control">
+              <label
+                for="size-calibration"
+                style="font-size: 0.75rem; color: var(--base01)"
+              >
+                Scale: <span id="size-calibration-value">100</span>%
+              </label>
+              <input
+                type="range"
+                id="size-calibration"
+                min="80"
+                max="140"
+                value="100"
+                step="1"
+                style="width: 150px"
+              />
+              <small
+                style="
+                  color: #93a1a1;
+                  display: block;
+                  margin-top: 4px;
+                  font-size: 0.7rem;
+                "
+              >
+                Adjust until preview matches real device size
+              </small>
+            </div>
+            <div id="actual-size-viewport" class="preview-viewport actual-size">
+              <div class="preview-placeholder">
+                <p>Actual device size</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Column 2: Dithered (Converted) -->
+          <div class="preview-column" data-preview="dithered">
+            <h3 class="preview-title">Dithered Preview</h3>
+            <div id="dither-viewport" class="preview-viewport">
+              <canvas id="dither-canvas"></canvas>
+            </div>
+          </div>
+
+          <!-- Column 3: Original (Split/Crop) -->
+          <div class="preview-column" data-preview="original">
+            <h3 class="preview-title">Original & Splits</h3>
+            <div id="original-viewport" class="preview-viewport">
+              <div class="canvas-stack">
+                <canvas id="original-canvas"></canvas>
+                <canvas id="overlay-canvas"></canvas>
+              </div>
+            </div>
+            <!-- Thumbnails for splits -->
+            <div id="split-thumbnails" class="split-thumbnails"></div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/lib/jszip.min.js"></script>
+    <script type="module" src="js/cbz-main.js"></script>
+  </body>
+</html>
+```

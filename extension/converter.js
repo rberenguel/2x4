@@ -441,8 +441,14 @@ class ExtensionConverter {
 
       // Add click handlers to trigger render
       const renderPreview = async () => {
-        this.elements.previewViewport.removeEventListener("click", renderPreview);
-        this.elements.actualSizeViewport.removeEventListener("click", renderPreview);
+        this.elements.previewViewport.removeEventListener(
+          "click",
+          renderPreview,
+        );
+        this.elements.actualSizeViewport.removeEventListener(
+          "click",
+          renderPreview,
+        );
         await this.updateImagePreview(true);
       };
       this.elements.previewViewport.addEventListener("click", renderPreview);
@@ -498,7 +504,9 @@ class ExtensionConverter {
 
       // Check if this render is still current
       if (myRenderID !== this.previewRenderCounter) {
-        console.log(`Skipping outdated preview render ${myRenderID} (current: ${this.previewRenderCounter})`);
+        console.log(
+          `Skipping outdated preview render ${myRenderID} (current: ${this.previewRenderCounter})`,
+        );
         return;
       }
 

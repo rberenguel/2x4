@@ -313,14 +313,66 @@ export class Renderer {
     const patterns = [
       [], // 0-10%: empty
       [[1, 1]], // 10-20%: center
-      [[0, 0], [2, 2]], // 20-30%: diagonal
-      [[0, 0], [1, 1], [2, 2]], // 30-40%: diagonal + center
-      [[0, 0], [0, 2], [2, 0], [2, 2]], // 40-50%: corners
-      [[0, 0], [0, 2], [1, 1], [2, 0], [2, 2]], // 50-60%: corners + center
-      [[0, 0], [0, 2], [1, 0], [1, 2], [2, 0], [2, 2]], // 60-70%: sides
-      [[0, 0], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 2]], // 70-80%: sides + center
-      [[0, 0], [0, 1], [0, 2], [1, 0], [1, 2], [2, 0], [2, 1], [2, 2]], // 80-90%: edges
-      [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 1], [2, 2]], // 90-100%: all
+      [
+        [0, 0],
+        [2, 2],
+      ], // 20-30%: diagonal
+      [
+        [0, 0],
+        [1, 1],
+        [2, 2],
+      ], // 30-40%: diagonal + center
+      [
+        [0, 0],
+        [0, 2],
+        [2, 0],
+        [2, 2],
+      ], // 40-50%: corners
+      [
+        [0, 0],
+        [0, 2],
+        [1, 1],
+        [2, 0],
+        [2, 2],
+      ], // 50-60%: corners + center
+      [
+        [0, 0],
+        [0, 2],
+        [1, 0],
+        [1, 2],
+        [2, 0],
+        [2, 2],
+      ], // 60-70%: sides
+      [
+        [0, 0],
+        [0, 2],
+        [1, 0],
+        [1, 1],
+        [1, 2],
+        [2, 0],
+        [2, 2],
+      ], // 70-80%: sides + center
+      [
+        [0, 0],
+        [0, 1],
+        [0, 2],
+        [1, 0],
+        [1, 2],
+        [2, 0],
+        [2, 1],
+        [2, 2],
+      ], // 80-90%: edges
+      [
+        [0, 0],
+        [0, 1],
+        [0, 2],
+        [1, 0],
+        [1, 1],
+        [1, 2],
+        [2, 0],
+        [2, 1],
+        [2, 2],
+      ], // 90-100%: all
     ];
 
     // Draw the dots (each logical dot becomes a 2x2 pixel block)
@@ -328,8 +380,8 @@ export class Renderer {
     const pattern = patterns[segment];
     for (const [row, col] of pattern) {
       // Scale logical position to pixel position (multiply by 2)
-      const pixelX = startX + (col * dotSize);
-      const pixelY = startY + (row * dotSize);
+      const pixelX = startX + col * dotSize;
+      const pixelY = startY + row * dotSize;
       // Draw 2x2 pixel block
       ctx.fillRect(pixelX, pixelY, dotSize, dotSize);
     }
