@@ -68,6 +68,7 @@ class EPUBConverterApp {
 
     this.initializeUI();
     this.attachEventListeners();
+    this.setupDragAndDrop();
     this.initializeCollapsibleSections();
     this.initializePreviewTabs();
 
@@ -260,6 +261,38 @@ class EPUBConverterApp {
           e.preventDefault();
           window.open("viewer.html", "_blank");
         }
+      }
+    });
+  }
+
+  setupDragAndDrop() {
+    const dropZone = this.elements.epubUpload.closest(".file-upload-label");
+    if (!dropZone) return;
+
+    ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
+      dropZone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      });
+    });
+
+    ["dragenter", "dragover"].forEach((eventName) => {
+      dropZone.addEventListener(eventName, () => {
+        dropZone.classList.add("drag-active");
+      });
+    });
+
+    ["dragleave", "drop"].forEach((eventName) => {
+      dropZone.addEventListener(eventName, () => {
+        dropZone.classList.remove("drag-active");
+      });
+    });
+
+    dropZone.addEventListener("drop", (e) => {
+      const file = e.dataTransfer.files[0];
+      if (file && file.name.endsWith(".epub")) {
+        // Manually trigger handleFileUpload with a mock event object
+        this.handleFileUpload({ target: { files: [file] } });
       }
     });
   }

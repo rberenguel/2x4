@@ -138,6 +138,13 @@ body {
   background-color: var(--base2);
 }
 
+.file-upload-label.drag-active {
+  border-color: var(--blue);
+  background-color: var(--base2);
+  border-style: solid;
+  transform: scale(1.02);
+}
+
 .upload-icon {
   font-size: 1.25rem;
 }

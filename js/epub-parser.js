@@ -111,7 +111,7 @@ export class EPUBParser {
       const mediaType = item.getAttribute("media-type");
 
       this.manifest[id] = {
-        href: this.basePath + href,
+        href: this.resolvePath(this.basePath, href),
         mediaType: mediaType,
       };
     });
@@ -179,30 +179,102 @@ export class EPUBParser {
    * @param {string} chapterPath - Path to current chapter
    * @returns {Promise<string>}
    */
+  /**
+   * Helper to process image elements (img or svg:image)
+   */
+  async processImageElement(img, chapterDir) {
+    // Check various attributes for source
+    const src =
+      img.getAttribute("src") ||
+      img.getAttribute("href") ||
+      img.getAttribute("xlink:href");
+
+    if (src && !src.startsWith("http") && !src.startsWith("data:")) {
+      try {
+        // Remove hash or query params
+        const cleanSrc = src.split(/[?#]/)[0];
+        // Decode URL
+        const decodedSrc = decodeURIComponent(cleanSrc);
+
+        const fullPath = this.resolvePath(chapterDir, decodedSrc);
+        const imageFile = this.zip.file(fullPath);
+
+        if (imageFile) {
+          const blob = await imageFile.async("blob");
+          const dataUrl = await this.blobToDataURL(blob);
+          
+          // Set the correct attribute based on element type
+          if (img.tagName.toLowerCase() === "image") {
+            img.setAttribute("href", dataUrl);
+            // Also set xlink:href for compatibility if it was present
+            if (img.hasAttribute("xlink:href")) {
+              img.setAttribute("xlink:href", dataUrl);
+            }
+          } else {
+            img.setAttribute("src", dataUrl);
+          }
+        } else {
+          // Try case-insensitive lookup
+          const files = Object.keys(this.zip.files);
+          const foundFile = files.find(
+            (f) => f.toLowerCase() === fullPath.toLowerCase(),
+          );
+          if (foundFile) {
+            const blob = await this.zip.file(foundFile).async("blob");
+            const dataUrl = await this.blobToDataURL(blob);
+            
+            if (img.tagName.toLowerCase() === "image") {
+              img.setAttribute("href", dataUrl);
+              if (img.hasAttribute("xlink:href")) {
+                img.setAttribute("xlink:href", dataUrl);
+              }
+            } else {
+              img.setAttribute("src", dataUrl);
+            }
+          } else {
+            console.warn(
+              `Image not found in EPUB: ${fullPath} (original: ${src})`,
+            );
+          }
+        }
+      } catch (error) {
+        console.warn(`Failed to load image: ${src}`, error);
+      }
+    }
+  }
+
+  /**
+   * Process content to resolve relative paths for images, CSS, etc.
+   * @param {HTMLElement} body - Body element
+   * @param {string} chapterPath - Path to current chapter
+   * @returns {Promise<string>}
+   */
   async processContent(body, chapterPath) {
     const chapterDir = chapterPath.substring(
       0,
       chapterPath.lastIndexOf("/") + 1,
     );
 
-    // Process images
-    const images = body.querySelectorAll("img");
-    for (const img of images) {
-      const src = img.getAttribute("src");
-      if (src) {
-        try {
-          const fullPath = this.resolvePath(chapterDir, src);
-          const imageFile = this.zip.file(fullPath);
+    // Process regular images
+    const images = Array.from(body.querySelectorAll("img"));
+    
+    // Process SVG images
+    const svgImages = Array.from(body.querySelectorAll("image"));
+    
+    console.log(`processContent debug for ${chapterPath}:`);
+    console.log(`- Found ${images.length} <img> tags`);
+    console.log(`- Found ${svgImages.length} <image> tags (SVG)`);
+    
+    if (svgImages.length > 0) {
+      svgImages.forEach((img, i) => {
+        console.log(`  SVG Image ${i}: href=${img.getAttribute("href")}, xlink:href=${img.getAttribute("xlink:href")}`);
+      });
+    }
 
-          if (imageFile) {
-            const blob = await imageFile.async("blob");
-            const dataUrl = await this.blobToDataURL(blob);
-            img.setAttribute("src", dataUrl);
-          }
-        } catch (error) {
-          console.warn(`Failed to load image: ${src}`, error);
-        }
-      }
+    const allImages = [...images, ...svgImages];
+
+    for (const img of allImages) {
+      await this.processImageElement(img, chapterDir);
     }
 
     return body.innerHTML;

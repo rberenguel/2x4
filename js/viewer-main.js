@@ -31,7 +31,40 @@ class XTCViewer {
     };
 
     this.attachEventListeners();
+    this.setupDragAndDrop();
     this.loadCalibrationScale();
+  }
+
+  setupDragAndDrop() {
+    const dropZone = this.elements.fileInput.closest(".file-upload-label");
+    if (!dropZone) return;
+
+    ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
+      dropZone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      });
+    });
+
+    ["dragenter", "dragover"].forEach((eventName) => {
+      dropZone.addEventListener(eventName, () => {
+        dropZone.classList.add("drag-active");
+      });
+    });
+
+    ["dragleave", "drop"].forEach((eventName) => {
+      dropZone.addEventListener(eventName, () => {
+        dropZone.classList.remove("drag-active");
+      });
+    });
+
+    dropZone.addEventListener("drop", (e) => {
+      const file = e.dataTransfer.files[0];
+      if (file && (file.name.endsWith(".xtc") || file.name.endsWith(".xtch"))) {
+        // Manually trigger handleFileSelect with a mock event object
+        this.handleFileSelect({ target: { files: [file] } });
+      }
+    });
   }
 
   attachEventListeners() {
