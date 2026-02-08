@@ -317,6 +317,9 @@ class ExtensionConverter {
       // Load into article parser
       await this.articleParser.loadFromData(queueData);
 
+      // Disable TOC since we're exporting articles individually
+      this.articleParser.includeTOC = false;
+
       // Embed images in all articles before preview
       console.log("2X4: Embedding images in loaded queue...");
       for (let i = 0; i < this.articleParser.articles.length; i++) {
@@ -485,12 +488,13 @@ class ExtensionConverter {
         const currentPageIndex = this.paginator.currentPageIndex;
         const currentPageInfo = this.pageMap[this.currentChapterIndex];
         const chapterProgress = currentPageIndex / currentPageInfo.pageCount;
-        const bookProgress =
-          (currentPageInfo.startPage - 1 + currentPageIndex) / this.totalPages;
 
-        const chapterMarkers = this.pageMap.map(
-          (chapter) => (chapter.startPage - 1) / this.totalPages,
-        );
+        // Since we export each article individually, book progress = chapter progress
+        // (each "book" is a single article)
+        const bookProgress = chapterProgress;
+
+        // Only one chapter marker at the start (since each file has 1 article)
+        const chapterMarkers = [0];
 
         progressInfo = { chapterProgress, bookProgress, chapterMarkers };
       }
@@ -889,33 +893,24 @@ class ExtensionConverter {
       // Images are already embedded during queue load, so skip that step
       console.log("2X4: Starting conversion (images already embedded)...");
 
-      // Separate Arxiv papers from regular articles
-      const arxivPapers = [];
-      const regularArticles = [];
+      const totalArticles = this.articleParser.articles.length;
+      console.log(`Converting ${totalArticles} articles individually...`);
 
-      for (let i = 0; i < this.articleParser.articles.length; i++) {
+      // Save original pageMap if progress bars are enabled
+      const savedPageMap = this.pageMap;
+      const savedTotalPages = this.totalPages;
+
+      // Convert each article individually
+      for (let i = 0; i < totalArticles; i++) {
         const article = this.articleParser.articles[i];
-        if (article.url && /arxiv\.org\/html\//.test(article.url)) {
-          arxivPapers.push({ article, index: i });
-        } else {
-          regularArticles.push(i);
-        }
-      }
-
-      // Convert each Arxiv paper individually
-      for (let i = 0; i < arxivPapers.length; i++) {
-        const { article, index } = arxivPapers[i];
         console.log(
-          `Converting Arxiv paper ${i + 1}/${arxivPapers.length}: ${article.title}`,
+          `Converting article ${i + 1}/${totalArticles}: ${article.title}`,
         );
 
         // Update progress
-        const arxivProgress =
-          ((i + 1) /
-            (arxivPapers.length + (regularArticles.length > 0 ? 1 : 0))) *
-          100;
-        this.elements.progressFill.style.width = `${arxivProgress}%`;
-        this.elements.progressText.textContent = `Converting Arxiv papers... ${i + 1}/${arxivPapers.length}`;
+        const progress = ((i + 1) / totalArticles) * 100;
+        this.elements.progressFill.style.width = `${progress}%`;
+        this.elements.progressText.textContent = `Converting article ${i + 1}/${totalArticles}...`;
 
         // Create temporary ArticleParser with single article
         const tempParser = new ArticleParser();
@@ -926,66 +921,42 @@ class ExtensionConverter {
           version: "1.0",
         };
         tempParser.articles = [article];
+        tempParser.includeTOC = false; // Disable TOC for individual articles
 
         // Update pipeline parser temporarily
         this.conversionPipeline.parser = tempParser;
 
-        // Prepare options for single paper
+        // Clear pageMap so each article does its own pre-pagination
+        // This ensures progress bars work correctly for single articles
+        this.pageMap = null;
+        this.totalPages = 0;
+
+        // Prepare options for single article
         const options = this._prepareConversionOptions();
 
-        // Extract Arxiv ID for filename
-        const arxivIdMatch = article.url.match(
-          /arxiv\.org\/html\/(\d+\.\d+v?\d*)/,
-        );
-        const arxivId = arxivIdMatch ? arxivIdMatch[1] : `arxiv-${index}`;
+        // Suppress chapter markers for individual articles
+        options.suppressChapterMarkers = true;
 
-        // Use filenamePattern for Arxiv papers
-        options.xtc.filenamePattern = arxivId;
-
-        console.log(`Converting ${arxivId} with filename: ${arxivId}.xtc`);
-
-        // Convert this paper directly with pipeline (no controller overhead)
-        for await (const event of this.conversionPipeline.convert(options)) {
-          // Handle completion event to download files
-          if (event.type === "complete") {
-            event.files.forEach((file) => {
-              this._downloadFile(file.blob, file.filename);
-            });
-          }
+        // Generate filename from article title
+        let filename;
+        if (article.url && /arxiv\.org\/html\//.test(article.url)) {
+          // Extract Arxiv ID for Arxiv papers
+          const arxivIdMatch = article.url.match(
+            /arxiv\.org\/html\/(\d+\.\d+v?\d*)/,
+          );
+          filename = arxivIdMatch ? arxivIdMatch[1] : this._sanitizeFilename(article.title);
+        } else {
+          // Use sanitized title for regular articles
+          filename = this._sanitizeFilename(article.title);
         }
-      }
 
-      // Convert regular articles together if any
-      if (regularArticles.length > 0) {
-        console.log(`Converting ${regularArticles.length} regular articles`);
+        // Use filenamePattern to set the filename
+        options.xtc.filenamePattern = filename;
 
-        this.elements.progressText.textContent = `Converting regular articles...`;
+        console.log(`Converting with filename: ${filename}.xtc`);
 
-        // Create parser with only regular articles
-        const regularArticleList = regularArticles.map(
-          (i) => originalParser.articles[i],
-        );
-        const tempParser = new ArticleParser();
-        tempParser.queueData = {
-          type: "article-queue",
-          articles: regularArticleList,
-          exportedAt: Date.now(),
-          version: "1.0",
-        };
-        tempParser.articles = regularArticleList;
-
-        // Update pipeline parser
-        this.conversionPipeline.parser = tempParser;
-
-        // Convert regular articles
-        const options = this._prepareConversionOptions();
+        // Convert this article directly with pipeline (no controller overhead)
         for await (const event of this.conversionPipeline.convert(options)) {
-          // Update progress from pipeline events
-          if (event.type === "render") {
-            const progress = (event.pageNumber / event.totalPages) * 100;
-            this.elements.progressFill.style.width = `${progress}%`;
-            this.elements.progressText.textContent = `Rendering page ${event.pageNumber}/${event.totalPages}`;
-          }
           // Handle completion event to download files
           if (event.type === "complete") {
             event.files.forEach((file) => {
@@ -1003,9 +974,13 @@ class ExtensionConverter {
       this.elements.progressText.textContent = `Error: ${error.message}`;
       // Don't use alert - just log and show in progress text
     } finally {
-      // Restore original parser
+      // Restore original parser and pageMap
       this.conversionPipeline.parser = originalParser;
       this.articleParser = originalParser;
+      if (typeof savedPageMap !== 'undefined') {
+        this.pageMap = savedPageMap;
+        this.totalPages = savedTotalPages;
+      }
       this.isConverting = false;
 
       // Re-enable button and hide progress after delay
@@ -1031,6 +1006,18 @@ class ExtensionConverter {
 
     // Clean up object URL after a delay
     setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  /**
+   * Sanitize filename for safe filesystem usage
+   * @private
+   */
+  _sanitizeFilename(filename) {
+    return filename
+      .replace(/[^a-z0-9-_.]/gi, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "")
+      .substring(0, 200);
   }
 
   sanitizeFilename(name) {
