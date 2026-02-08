@@ -9,8 +9,9 @@ A browser-based PWA and Chrome extension that converts EPUB files, ArXiv papers,
 ### Core Functionality
 
 - **Browser-based:** No server or build tools required
+- **Drag & drop support:** Drop EPUB files directly onto the upload area (both PWA and extension)
 - **Multiple input formats:**
-  - **EPUB files:** Full EPUB 2/3 support with proper pagination
+  - **EPUB files:** Full EPUB 2/3 support with proper pagination and SVG image support
   - **Comics (CBZ/CBR):** Smart conversion with auto-split and dithering (still in progress, manual split only)
   - **ArXiv papers:** Direct from ArXiv HTML URLs or pasted HTML source
   - **Web articles:** Extract any article with the Chrome extension
@@ -49,12 +50,13 @@ A browser-based PWA and Chrome extension that converts EPUB files, ArXiv papers,
 - **Self-contained converter:** Extension includes its own converter interface with full PWA features
 - **No PWA needed:** Convert directly in the extension - all typography, format, and preview options available
 - **Persistent storage:** Queue survives browser restarts
-- **Smart separation:** ArXiv papers are automatically exported individually (e.g., `2510.04618v1.xtc`), while regular web articles are bundled together (e.g., `2x4-3-20251207.xtc`)
+- **Individual article export:** Each article in the queue is exported as a separate XTC file with sanitized filename (ArXiv papers use their ArXiv ID, e.g., `2510.04618v1.xtc`, regular articles use their title)
 - **Device file manager:** Browse, upload, rename, delete files, and create folders on X4 device via WiFi (hotspot mode)
 
 ### XTC Viewer
 
 - **View XTC files:** Open and browse through XTC files directly in browser
+- **Drag & drop support:** Drop XTC/XTCH files directly onto the upload area
 - **Metadata display:** View title, author, chapters, and file information
 - **Navigation:** Navigate pages with buttons or keyboard (arrows, Page Up/Down, Home/End, Space)
 - **Chapter jumping:** Click chapters in metadata panel to jump to specific sections
@@ -106,10 +108,9 @@ A browser-based PWA and Chrome extension that converts EPUB files, ArXiv papers,
    - Adjust typography/format settings if desired
    - Preview articles with navigation
    - Click "Convert & Export" to generate XTC file(s)
-   - ArXiv papers are exported individually with their ArXiv ID as filename
-   - Regular articles are bundled together with date-based filename
+   - Each article is exported as a separate file (ArXiv papers use their ArXiv ID as filename, regular articles use their sanitized title)
 
-   **Note:** ArXiv papers with heavy mathematical notation can take 10-30 seconds per page to render. Consider converting them separately from web articles.
+   **Note:** ArXiv papers with heavy mathematical notation can take 10-30 seconds per page to render.
 
 ### Option 2: Standalone PWA (EPUB / ArXiv)
 
@@ -130,7 +131,7 @@ A browser-based PWA and Chrome extension that converts EPUB files, ArXiv papers,
 2. **Convert an EPUB:**
 
    - Select "EPUB" mode
-   - Click "Choose EPUB File" and select your `.epub`
+   - Click "Choose EPUB File" or drag & drop your `.epub` file
    - Adjust typography settings (font, size, line height)
    - Set JPEG quality (default 85%)
    - Choose output format (XTC recommended)
@@ -165,7 +166,7 @@ A browser-based PWA and Chrome extension that converts EPUB files, ArXiv papers,
    - Or navigate directly to `viewer.html`
 
 2. **Load and browse:**
-   - Click "Choose XTC File" to select an `.xtc` or `.xtch` file
+   - Click "Choose XTC File" or drag & drop an `.xtc` or `.xtch` file
    - View file metadata (title, author, chapters)
    - Navigate with buttons or keyboard shortcuts:
      - `←` / `→` or `PageUp` / `PageDown` - Previous/Next page
